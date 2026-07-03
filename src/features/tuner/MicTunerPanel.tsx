@@ -16,10 +16,8 @@ export function MicTunerPanel() {
   const tuning = resolveTuning(currentTuningId, customItems);
   const metronomePlaying = useMetronomeStore((s) => s.isPlaying);
 
-  const { permissionState, requestPermission, reading, fixedStringIndex, setFixedStringIndex } = useTunerEngine(
-    tuning,
-    a4,
-  );
+  const { permissionState, requestPermission, reading, fixedStringIndex, setFixedStringIndex, lastError } =
+    useTunerEngine(tuning, a4);
 
   const highlightIndex = fixedStringIndex ?? reading.nearestStringIndex;
 
@@ -49,9 +47,27 @@ export function MicTunerPanel() {
       {permissionState === 'requesting' && <p>マイクへのアクセスを確認中…</p>}
 
       {permissionState === 'error' && (
-        <div>
-          <p style={{ color: 'var(--warn)' }}>マイクの初期化に失敗しました。</p>
-          <button onClick={() => void requestPermission()}>もう一度試す</button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <p style={{ color: 'var(--warn)', margin: 0 }}>マイクの初期化に失敗しました。</p>
+          {lastError && (
+            <p className="tabular-nums" style={{ fontSize: 11, color: 'var(--line)', margin: 0, wordBreak: 'break-all' }}>
+              {lastError}
+            </p>
+          )}
+          <button
+            onClick={() => void requestPermission()}
+            style={{
+              alignSelf: 'flex-start',
+              minHeight: 44,
+              padding: '0 16px',
+              borderRadius: 8,
+              border: '1px solid var(--accent)',
+              background: 'var(--surface)',
+              color: 'var(--accent)',
+            }}
+          >
+            もう一度試す
+          </button>
         </div>
       )}
 

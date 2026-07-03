@@ -4,6 +4,7 @@ import { useCustomTuningsStore } from '../../stores/customTuningsStore';
 import { resolveTuning } from '../../theory/tuningResolver';
 import { noteName } from '../../theory/pitch';
 import { getGuitarSynth, unlockAudio } from '../../audio/AudioEngine';
+import type { PluckHandle } from '../../audio/karplusStrong';
 
 const REFERENCE_TONE_SECONDS = 3;
 
@@ -18,22 +19,40 @@ export function ReferenceTonePanel() {
   const [repeat, setRepeat] = useState(false);
   const [activeString, setActiveString] = useState<number | null>(null);
   const intervalRef = useRef<number | null>(null);
+  // Only one reference tone should ever ring at a time: overlapping Karplus-Strong
+  // voices sum on the shared guitar bus and can clip into harsh distortion, and
+  // "stop" should silence the currently-ringing voice immediately, not just cancel
+  // future repeats.
+  const activeVoiceRef = useRef<PluckHandle | null>(null);
 
-  const stopRepeat = () => {
+  const stop = () => {
     if (intervalRef.current !== null) {
       window.clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
+    activeVoiceRef.current?.stop();
+    activeVoiceRef.current = null;
     setActiveString(null);
   };
 
-  useEffect(() => stopRepeat, []);
+  useEffect(() => stop, []);
 
   const playString = async (index: number) => {
     await unlockAudio();
-    stopRepeat();
+    if (intervalRef.current !== null) {
+      window.clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
     const midi = tuning[index];
-    const play = () => getGuitarSynth().pluck(midi, { a4, sustainSeconds: REFERENCE_TONE_SECONDS, velocity: 0.8, brightness: 0.5 });
+    const play = () => {
+      activeVoiceRef.current?.stop();
+      activeVoiceRef.current = getGuitarSynth().pluck(midi, {
+        a4,
+        sustainSeconds: REFERENCE_TONE_SECONDS,
+        velocity: 0.8,
+        brightness: 0.5,
+      });
+    };
     play();
     setActiveString(index);
     if (repeat) {
@@ -50,7 +69,10 @@ export function ReferenceTonePanel() {
           checked={repeat}
           onChange={(e) => {
             setRepeat(e.target.checked);
-            if (!e.target.checked) stopRepeat();
+            if (!e.target.checked && intervalRef.current !== null) {
+              window.clearInterval(intervalRef.current);
+              intervalRef.current = null;
+            }
           }}
         />
       </label>
@@ -83,7 +105,7 @@ export function ReferenceTonePanel() {
 
       {activeString !== null && (
         <button
-          onClick={stopRepeat}
+          onClick={stop}
           style={{
             alignSelf: 'center',
             minHeight: 40,

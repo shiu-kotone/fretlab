@@ -40,6 +40,7 @@ export function useTunerEngine(tuning: Midi[], a4: number) {
   const [permissionState, setPermissionState] = useState<MicPermissionState>('idle');
   const [fixedStringIndex, setFixedStringIndex] = useState<number | null>(null);
   const [reading, setReading] = useState<TunerReading>(INITIAL_READING);
+  const [lastError, setLastError] = useState<string | null>(null);
 
   const captureRef = useRef<MicCapture | null>(null);
   const intervalRef = useRef<number | null>(null);
@@ -88,6 +89,7 @@ export function useTunerEngine(tuning: Midi[], a4: number) {
 
   const requestPermission = useCallback(async () => {
     setPermissionState('requesting');
+    setLastError(null);
     try {
       await unlockAudio();
       const stream = await requestMicStream();
@@ -95,7 +97,10 @@ export function useTunerEngine(tuning: Midi[], a4: number) {
       setPermissionState('granted');
       intervalRef.current = window.setInterval(tick, POLL_INTERVAL_MS);
     } catch (err) {
-      if (err instanceof DOMException && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError')) {
+      const name = err instanceof DOMException ? err.name : err instanceof Error ? err.name : 'UnknownError';
+      const message = err instanceof Error ? err.message : String(err);
+      setLastError(`${name}: ${message}`);
+      if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
         setPermissionState('denied');
       } else {
         setPermissionState('error');
@@ -105,5 +110,5 @@ export function useTunerEngine(tuning: Midi[], a4: number) {
 
   useEffect(() => stopMic, [stopMic]);
 
-  return { permissionState, requestPermission, stopMic, reading, fixedStringIndex, setFixedStringIndex };
+  return { permissionState, requestPermission, stopMic, reading, fixedStringIndex, setFixedStringIndex, lastError };
 }

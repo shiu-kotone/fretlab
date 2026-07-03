@@ -69,6 +69,11 @@ interface Voice {
   release: (when: number) => void;
 }
 
+export interface PluckHandle {
+  /** Fades the voice out quickly (~30ms, click-free) and stops it immediately, instead of waiting for its natural decay. */
+  stop: () => void;
+}
+
 function createNoiseBuffer(ctx: BaseAudioContext, duration: number): AudioBuffer {
   const length = Math.max(1, Math.floor(ctx.sampleRate * duration));
   const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
@@ -93,7 +98,7 @@ export class KarplusStrongSynth {
     private destination: AudioNode,
   ) {}
 
-  pluck(midi: Midi, opts: PluckOptions = {}): void {
+  pluck(midi: Midi, opts: PluckOptions = {}): PluckHandle {
     const ctx = this.ctx;
     const now = ctx.currentTime;
 
@@ -121,7 +126,10 @@ export class KarplusStrongSynth {
     feedback.gain.value = feedbackGain;
 
     const output = ctx.createGain();
-    output.gain.value = 1;
+    // Headroom below unity: several voices can legitimately overlap (a chord,
+    // rapid restrikes) and sum on the shared guitar bus; this plus the
+    // DynamicsCompressorNode in AudioEngine keeps that from hard-clipping.
+    output.gain.value = 0.8;
 
     noise.connect(excitationGain);
     excitationGain.connect(delay);
@@ -135,7 +143,7 @@ export class KarplusStrongSynth {
     noise.stop(now + NOISE_BURST_DURATION);
 
     const naturalEnd = now + sustainSeconds + 0.5;
-    output.gain.setValueAtTime(1, naturalEnd - RELEASE_TAIL_SECONDS);
+    output.gain.setValueAtTime(0.8, naturalEnd - RELEASE_TAIL_SECONDS);
     output.gain.linearRampToValueAtTime(0, naturalEnd);
 
     const release = (when: number) => {
@@ -163,5 +171,12 @@ export class KarplusStrongSynth {
       },
       (naturalEnd - now) * 1000 + 100,
     );
+
+    return {
+      stop: () => {
+        release(this.ctx.currentTime);
+        this.voices = this.voices.filter((v) => v !== voice);
+      },
+    };
   }
 }

@@ -26,8 +26,21 @@ export function getAudioContext(): AudioContext {
     audioContext = createContext();
     clickGain = audioContext.createGain();
     clickGain.connect(audioContext.destination);
+
+    // The guitar synth is legitimately polyphonic (chords, rapid restrikes,
+    // an overlapping repeat/tap) — several Karplus-Strong voices summing on
+    // one bus can exceed 0dBFS and hard-clip into harsh digital noise. A
+    // gentle compressor on the bus acts as a safety limiter so that stays
+    // clean without audibly coloring a single note.
     guitarGain = audioContext.createGain();
-    guitarGain.connect(audioContext.destination);
+    const guitarCompressor = audioContext.createDynamicsCompressor();
+    guitarCompressor.threshold.value = -12;
+    guitarCompressor.knee.value = 6;
+    guitarCompressor.ratio.value = 12;
+    guitarCompressor.attack.value = 0.003;
+    guitarCompressor.release.value = 0.25;
+    guitarGain.connect(guitarCompressor);
+    guitarCompressor.connect(audioContext.destination);
   }
   return audioContext;
 }

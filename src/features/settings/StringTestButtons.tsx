@@ -1,8 +1,10 @@
+import { useEffect, useRef } from 'react';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useCustomTuningsStore } from '../../stores/customTuningsStore';
 import { resolveTuning } from '../../theory/tuningResolver';
 import { noteName } from '../../theory/pitch';
 import { getGuitarSynth, unlockAudio } from '../../audio/AudioEngine';
+import type { PluckHandle } from '../../audio/karplusStrong';
 
 /**
  * SPEC §8 Phase 0 acceptance: "テストボタンで弦の音が鳴り" — a minimal demo of the
@@ -16,9 +18,20 @@ export function StringTestButtons() {
   const customItems = useCustomTuningsStore((s) => s.items);
   const tuning = resolveTuning(currentTuningId, customItems);
 
+  // Stop the previous voice before starting the next: overlapping Karplus-Strong
+  // voices sum on the shared guitar bus and can clip into harsh distortion.
+  const activeVoiceRef = useRef<PluckHandle | null>(null);
+  useEffect(() => () => activeVoiceRef.current?.stop(), []);
+
   const playString = async (stringIndex: number) => {
     await unlockAudio();
-    getGuitarSynth().pluck(tuning[stringIndex], { a4, velocity: 0.85, brightness: 0.55, sustainSeconds: 2.2 });
+    activeVoiceRef.current?.stop();
+    activeVoiceRef.current = getGuitarSynth().pluck(tuning[stringIndex], {
+      a4,
+      velocity: 0.85,
+      brightness: 0.55,
+      sustainSeconds: 2.2,
+    });
   };
 
   return (
