@@ -38,3 +38,10 @@ export function fretToMidi(stringIndex: number, fret: number, tuning: Midi[] = R
 export function interval(root: Midi, note: Midi): number {
   return ((note - root) % 12 + 12) % 12;
 }
+
+const NATURAL_PITCH_CLASSES = new Set([0, 2, 4, 5, 7, 9, 11]); // C D E F G A B
+
+/** True for natural notes (no sharp/flat) — SPEC §5.1 fretboard label mode "ナチュラル音のみ". */
+export function isNaturalPitchClass(pitchClass: number): boolean {
+  return NATURAL_PITCH_CLASSES.has(((pitchClass % 12) + 12) % 12);
+}

@@ -5,6 +5,7 @@ import {
   noteName,
   fretToMidi,
   interval,
+  isNaturalPitchClass,
   REGULAR_TUNING,
 } from './pitch';
 
@@ -76,5 +77,25 @@ describe('interval', () => {
   it('wraps negative distances into 0-11', () => {
     expect(interval(60, 48)).toBe(0);
     expect(interval(61, 60)).toBe(11);
+  });
+});
+
+describe('isNaturalPitchClass', () => {
+  it('is true for the 7 natural notes (C D E F G A B)', () => {
+    for (const pc of [0, 2, 4, 5, 7, 9, 11]) {
+      expect(isNaturalPitchClass(pc)).toBe(true);
+    }
+  });
+
+  it('is false for the 5 sharp/flat notes', () => {
+    for (const pc of [1, 3, 6, 8, 10]) {
+      expect(isNaturalPitchClass(pc)).toBe(false);
+    }
+  });
+
+  it('wraps pitch classes outside 0-11', () => {
+    expect(isNaturalPitchClass(12)).toBe(true); // wraps to 0 (C)
+    expect(isNaturalPitchClass(-1)).toBe(true); // wraps to 11 (B)
+    expect(isNaturalPitchClass(13)).toBe(false); // wraps to 1 (C#)
   });
 });

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { TabBar, type TabId } from './components/TabBar';
 import { Placeholder } from './components/Placeholder';
 import { MetronomeView } from './features/metronome/MetronomeView';
+import { FretboardView } from './features/fretboard/FretboardView';
 import { TunerView } from './features/tuner/TunerView';
 import { LabView } from './features/settings/LabView';
 import { useMetronomeStore } from './stores/metronomeStore';
@@ -88,7 +89,7 @@ export default function App() {
         <div style={{ display: tab === 'metronome' ? 'block' : 'none', height: '100%' }}>
           <MetronomeView />
         </div>
-        {tab === 'fretboard' && <Placeholder title="指板" />}
+        {tab === 'fretboard' && <FretboardView />}
         {tab === 'chords' && <Placeholder title="コード" />}
         {tab === 'tuner' && <TunerView />}
         {tab === 'lab' && <LabView />}
