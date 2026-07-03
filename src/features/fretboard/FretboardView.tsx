@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Fretboard, type FretHighlight } from './Fretboard';
 import { useFretboardEngine } from './useFretboardEngine';
 import { DegreePanel } from './DegreePanel';
@@ -19,6 +19,21 @@ const LABEL_MODE_OPTIONS: { id: LabelMode; label: string }[] = [
   { id: 'natural', label: 'ナチュラル' },
   { id: 'tapped', label: 'タップ' },
 ];
+
+/** SPEC §3.2: "横向きは指板タブのみ最適化(全フレット表示)". */
+function useIsLandscape(): boolean {
+  const [isLandscape, setIsLandscape] = useState(
+    () => window.matchMedia('(orientation: landscape)').matches,
+  );
+  useEffect(() => {
+    const mql = window.matchMedia('(orientation: landscape)');
+    const apply = () => setIsLandscape(mql.matches);
+    apply();
+    mql.addEventListener('change', apply);
+    return () => mql.removeEventListener('change', apply);
+  }, []);
+  return isLandscape;
+}
 
 export function FretboardView() {
   const currentTuningId = useSettingsStore((s) => s.currentTuningId);
@@ -41,6 +56,18 @@ export function FretboardView() {
   const positionBox = useFretboardStore((s) => s.positionBox);
 
   const engine = useFretboardEngine(tuning);
+  const isLandscape = useIsLandscape();
+
+  // Auto-switch to showing all 22 frets on entering landscape, the one time
+  // it matters most (a still-at-default 12F view) — doesn't fight a zoom
+  // level the user has already deliberately chosen.
+  const hasAutoZoomed = useRef(false);
+  useEffect(() => {
+    if (isLandscape && !hasAutoZoomed.current && zoomFrets === 12) {
+      hasAutoZoomed.current = true;
+      setZoomFrets(22);
+    }
+  }, [isLandscape, zoomFrets, setZoomFrets]);
 
   const getHighlight = useCallback(
     (tuningIndex: number, fret: number): FretHighlight | null => {
@@ -80,50 +107,73 @@ export function FretboardView() {
   );
 
   return (
-    <div style={{ padding: '8px 16px 32px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div
+      style={{
+        padding: isLandscape ? '6px 10px 24px' : '8px 16px 32px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: isLandscape ? 6 : 12,
+      }}
+    >
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button
           onClick={() => setOverlayMode(overlayMode === 'degree' ? 'off' : 'degree')}
-          style={toolbarButtonStyle(overlayMode === 'degree')}
+          style={toolbarButtonStyle(overlayMode === 'degree', isLandscape)}
         >
           度数
         </button>
         <button
           onClick={() => setOverlayMode(overlayMode === 'scale' ? 'off' : 'scale')}
-          style={toolbarButtonStyle(overlayMode === 'scale')}
+          style={toolbarButtonStyle(overlayMode === 'scale', isLandscape)}
         >
           スケール
         </button>
         <button
           onClick={() => setStringOrientation(orientation === '1-top' ? '6-top' : '1-top')}
-          style={toolbarButtonStyle(false)}
+          style={toolbarButtonStyle(false, isLandscape)}
         >
           {orientation === '1-top' ? '1弦が上' : '6弦が上'}
         </button>
       </div>
 
-      <Fretboard
-        tuning={tuning}
-        orientation={orientation}
-        zoomFrets={zoomFrets}
-        leftHanded={leftHanded}
-        labelMode={labelMode}
-        noteNaming={noteNaming}
-        getHighlight={getHighlight}
-        isFretDimmed={isFretDimmed}
-        activeGlows={engine.activeGlows}
-        tappedPositions={engine.tappedPositions}
-        svgRef={engine.svgRef}
-        onPointerDown={engine.handlePointerDown}
-        onPointerMove={engine.handlePointerMove}
-        onPointerUp={engine.handlePointerUp}
-        onPointerCancel={engine.handlePointerCancel}
-      />
+      {/* SPEC §3.2 "横向きは指板タブのみ最適化(全フレット表示)": the fretboard
+          gets a generous, orientation-aware DEFINITE height (min-height
+          alone is only a floor — the SVG's own aspect ratio would just push
+          the container taller than intended, unconstrained), and the SVG
+          (preserveAspectRatio, width/height 100%) scales up to fill it —
+          maximizing the tappable area in both orientations, landscape especially. */}
+      <div
+        style={{
+          height: isLandscape ? '68vh' : '42vh',
+          minHeight: 0,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        <Fretboard
+          tuning={tuning}
+          orientation={orientation}
+          zoomFrets={zoomFrets}
+          leftHanded={leftHanded}
+          labelMode={labelMode}
+          noteNaming={noteNaming}
+          getHighlight={getHighlight}
+          isFretDimmed={isFretDimmed}
+          activeGlows={engine.activeGlows}
+          tappedPositions={engine.tappedPositions}
+          svgRef={engine.svgRef}
+          onPointerDown={engine.handlePointerDown}
+          onPointerMove={engine.handlePointerMove}
+          onPointerUp={engine.handlePointerUp}
+          onPointerCancel={engine.handlePointerCancel}
+        />
+      </div>
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
         <span style={{ fontSize: 12, color: 'var(--line)' }}>表示フレット</span>
         {ZOOM_OPTIONS.map((z) => (
-          <button key={z} onClick={() => setZoomFrets(z)} style={toolbarButtonStyle(zoomFrets === z)}>
+          <button key={z} onClick={() => setZoomFrets(z)} style={toolbarButtonStyle(zoomFrets === z, isLandscape)}>
             {z}F
           </button>
         ))}
@@ -132,7 +182,7 @@ export function FretboardView() {
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
         <span style={{ fontSize: 12, color: 'var(--line)' }}>音名ラベル</span>
         {LABEL_MODE_OPTIONS.map((opt) => (
-          <button key={opt.id} onClick={() => setLabelMode(opt.id)} style={toolbarButtonStyle(labelMode === opt.id)}>
+          <button key={opt.id} onClick={() => setLabelMode(opt.id)} style={toolbarButtonStyle(labelMode === opt.id, isLandscape)}>
             {opt.label}
           </button>
         ))}
@@ -144,14 +194,14 @@ export function FretboardView() {
   );
 }
 
-function toolbarButtonStyle(active: boolean) {
+function toolbarButtonStyle(active: boolean, compact = false) {
   return {
-    minHeight: 40,
-    padding: '0 14px',
+    minHeight: compact ? 32 : 40,
+    padding: compact ? '0 10px' : '0 14px',
     borderRadius: 8,
     border: `1px solid ${active ? 'var(--accent)' : 'var(--line)'}`,
     background: active ? 'var(--accent)' : 'var(--surface)',
     color: active ? 'var(--bg)' : 'var(--string)',
-    fontSize: 13,
+    fontSize: compact ? 12 : 13,
   };
 }

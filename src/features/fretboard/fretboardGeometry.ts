@@ -19,18 +19,27 @@ export function fretAreaWidth(): number {
   return VIEW_WIDTH - OPEN_ZONE_WIDTH;
 }
 
-export function fretWidth(zoomFrets: number): number {
-  return fretAreaWidth() / zoomFrets;
+/**
+ * Real guitar frets follow the 12th-root-of-2 scale-length formula, not even
+ * spacing — distance from the nut to fret n (as a fraction of scale length)
+ * is `1 - 1/2^(n/12)`. This normalizes that against fret `zoomFrets` so the
+ * last visible fret always reaches the right edge of the fret area,
+ * regardless of which zoom level (12F/15F/22F) is selected.
+ */
+function rawFretPosition(fret: number): number {
+  return 1 - 1 / Math.pow(2, fret / 12);
 }
 
 /** x of the fret wire at the right edge of fret `fret`'s playable zone (fret 0 = the nut). */
 export function fretBoundaryX(fret: number, zoomFrets: number): number {
-  return OPEN_ZONE_WIDTH + fret * fretWidth(zoomFrets);
+  if (fret <= 0) return OPEN_ZONE_WIDTH;
+  const normalized = rawFretPosition(fret) / rawFretPosition(zoomFrets);
+  return OPEN_ZONE_WIDTH + normalized * fretAreaWidth();
 }
 
 export function fretCenterX(fret: number, zoomFrets: number): number {
   if (fret <= 0) return OPEN_ZONE_WIDTH / 2;
-  return fretBoundaryX(fret - 1, zoomFrets) + fretWidth(zoomFrets) / 2;
+  return (fretBoundaryX(fret - 1, zoomFrets) + fretBoundaryX(fret, zoomFrets)) / 2;
 }
 
 /** 0 = top row, regardless of tuning index; depends on display orientation. */
@@ -70,12 +79,18 @@ export function pointToFretPosition(
 
   const tuningIndex = orientation === '1-top' ? STRING_COUNT - 1 - row : row;
 
-  let fret: number;
+  let fret = zoomFrets;
   if (x < OPEN_ZONE_WIDTH) {
     fret = 0;
   } else {
-    fret = Math.ceil((x - OPEN_ZONE_WIDTH) / fretWidth(zoomFrets));
-    fret = Math.max(1, Math.min(zoomFrets, fret));
+    // Fret boundaries aren't evenly spaced (logarithmic), so find the first
+    // one at or past the tap — cheap linear scan, at most 22 iterations.
+    for (let f = 1; f <= zoomFrets; f++) {
+      if (x <= fretBoundaryX(f, zoomFrets)) {
+        fret = f;
+        break;
+      }
+    }
   }
   return { tuningIndex, fret };
 }

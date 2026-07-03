@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import {
-  fretWidth,
   fretBoundaryX,
   fretCenterX,
   stringVisualRow,
@@ -11,16 +10,6 @@ import {
   TOP_MARGIN,
   STRING_SPACING,
 } from './fretboardGeometry';
-
-describe('fretWidth', () => {
-  it('divides the fret area evenly for the given zoom level', () => {
-    expect(fretWidth(12) * 12).toBeCloseTo(VIEW_WIDTH - OPEN_ZONE_WIDTH, 6);
-  });
-
-  it('a higher zoom (more frets) makes each fret narrower', () => {
-    expect(fretWidth(22)).toBeLessThan(fretWidth(12));
-  });
-});
 
 describe('fretBoundaryX / fretCenterX', () => {
   it('fret 0 boundary is exactly the nut position', () => {
@@ -38,9 +27,29 @@ describe('fretBoundaryX / fretCenterX', () => {
     }
   });
 
-  it('the last fret boundary reaches the full view width', () => {
+  it('the last fret boundary reaches the full view width, at every zoom level', () => {
     expect(fretBoundaryX(12, 12)).toBeCloseTo(VIEW_WIDTH, 6);
+    expect(fretBoundaryX(15, 15)).toBeCloseTo(VIEW_WIDTH, 6);
     expect(fretBoundaryX(22, 22)).toBeCloseTo(VIEW_WIDTH, 6);
+  });
+
+  it('follows the 12th-root-of-2 scale-length formula: fret widths shrink going up the neck (realistic spacing, not even)', () => {
+    const widthOf = (f: number, zoom: number) => fretBoundaryX(f, zoom) - fretBoundaryX(f - 1, zoom);
+    const firstFretWidth = widthOf(1, 22);
+    const lastFretWidth = widthOf(22, 22);
+    expect(lastFretWidth).toBeLessThan(firstFretWidth);
+    // consecutive fret widths should shrink monotonically up the neck
+    for (let f = 2; f <= 22; f++) {
+      expect(widthOf(f, 22)).toBeLessThanOrEqual(widthOf(f - 1, 22));
+    }
+  });
+
+  it('fret 12 (an octave) lands past the halfway point of the visible board at 12F zoom', () => {
+    // real guitars: fret 12 is the halfway point of the *full open-to-bridge*
+    // scale length, but since only 12 frets are shown here (nothing beyond
+    // the octave), it should still land in the second half of the fret area.
+    const midpoint = (OPEN_ZONE_WIDTH + VIEW_WIDTH) / 2;
+    expect(fretBoundaryX(12, 12)).toBeGreaterThan(midpoint);
   });
 });
 

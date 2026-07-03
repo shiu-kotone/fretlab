@@ -1,13 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
-import {
-  computeFeedbackGain,
-  computeLowpassCutoff,
-  computeVelocityGain,
-  clampSustainSeconds,
-  pushVoiceWithLimit,
-  noiseBurstEnvelope,
-  MAX_POLYPHONY,
-} from './karplusStrong';
+import { describe, it, expect } from 'vitest';
+import { computeFeedbackGain, computeLowpassCutoff, computeVelocityGain, clampSustainSeconds } from './karplusStrong';
 
 describe('computeFeedbackGain', () => {
   it('produces a gain of 1 when sustain is effectively infinite relative to the period', () => {
@@ -67,68 +59,5 @@ describe('clampSustainSeconds', () => {
     expect(clampSustainSeconds(0.5)).toBe(1.5);
     expect(clampSustainSeconds(10)).toBe(3);
     expect(clampSustainSeconds(2.2)).toBe(2.2);
-  });
-});
-
-describe('noiseBurstEnvelope', () => {
-  it('starts at (or near) zero to avoid a hard onset click', () => {
-    const env = noiseBurstEnvelope(200);
-    expect(env[0]).toBeCloseTo(0, 5);
-  });
-
-  it('ends at (or near) zero to avoid a hard offset click', () => {
-    const env = noiseBurstEnvelope(200);
-    expect(env[env.length - 1]).toBeCloseTo(0, 1);
-  });
-
-  it('reaches full amplitude (1) somewhere in the middle', () => {
-    const env = noiseBurstEnvelope(200);
-    expect(Math.max(...env)).toBeCloseTo(1, 5);
-  });
-
-  it('never exceeds the 0-1 range', () => {
-    const env = noiseBurstEnvelope(500);
-    for (const v of env) {
-      expect(v).toBeGreaterThanOrEqual(0);
-      expect(v).toBeLessThanOrEqual(1);
-    }
-  });
-
-  it('handles very short buffers without throwing', () => {
-    expect(() => noiseBurstEnvelope(1)).not.toThrow();
-    expect(() => noiseBurstEnvelope(3)).not.toThrow();
-  });
-});
-
-describe('pushVoiceWithLimit', () => {
-  it('appends voices without eviction while under the limit', () => {
-    const released: number[] = [];
-    let voices: number[] = [];
-    for (let i = 0; i < 5; i++) {
-      voices = pushVoiceWithLimit(voices, i, MAX_POLYPHONY, (v) => released.push(v));
-    }
-    expect(voices).toEqual([0, 1, 2, 3, 4]);
-    expect(released).toEqual([]);
-  });
-
-  it('releases the oldest voice once the polyphony limit is exceeded', () => {
-    const released: number[] = [];
-    let voices: number[] = [];
-    for (let i = 0; i < MAX_POLYPHONY + 3; i++) {
-      voices = pushVoiceWithLimit(voices, i, MAX_POLYPHONY, (v) => released.push(v));
-    }
-    expect(voices).toHaveLength(MAX_POLYPHONY);
-    expect(released).toEqual([0, 1, 2]); // oldest-first eviction
-    expect(voices[0]).toBe(3); // the 4th voice is now the oldest survivor
-  });
-
-  it('calls the release callback exactly once per evicted voice', () => {
-    const releaseFn = vi.fn();
-    let voices: string[] = [];
-    for (let i = 0; i < MAX_POLYPHONY + 1; i++) {
-      voices = pushVoiceWithLimit(voices, `v${i}`, MAX_POLYPHONY, releaseFn);
-    }
-    expect(releaseFn).toHaveBeenCalledTimes(1);
-    expect(releaseFn).toHaveBeenCalledWith('v0');
   });
 });

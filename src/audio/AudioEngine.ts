@@ -15,6 +15,16 @@ let clickGain: GainNode | null = null;
 let guitarGain: GainNode | null = null;
 let guitarSynth: KarplusStrongSynth | null = null;
 let unlocked = false;
+let workletModulePromise: Promise<void> | null = null;
+
+/** The Karplus-Strong voice engine lives in an AudioWorkletProcessor (see that file for why); it must be registered before any AudioWorkletNode using it can be constructed. */
+function loadGuitarWorkletModule(ctx: AudioContext): Promise<void> {
+  if (!workletModulePromise) {
+    const url = `${import.meta.env.BASE_URL}audio-worklets/karplus-strong-processor.js`;
+    workletModulePromise = ctx.audioWorklet.addModule(url);
+  }
+  return workletModulePromise;
+}
 
 function createContext(): AudioContext {
   const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -55,7 +65,13 @@ export function getGuitarGain(): GainNode {
   return guitarGain!;
 }
 
-/** Shared Karplus-Strong voice (SPEC §4.4/§8 Phase 0 demo), routed through the guitar master gain. */
+/**
+ * Shared Karplus-Strong voice (SPEC §4.4/§8 Phase 0 demo), routed through the
+ * guitar master gain. Requires `await unlockAudio()` to have completed first
+ * (it registers the AudioWorklet module this depends on) — every current
+ * call site already does this as part of the common unlock-on-first-gesture
+ * flow.
+ */
 export function getGuitarSynth(): KarplusStrongSynth {
   const ctx = getAudioContext();
   if (!guitarSynth) {
@@ -94,13 +110,14 @@ export function setAudioSessionType(type: AudioSessionType): void {
   }
 }
 
-/** Common unlock path for the first user gesture (SPEC §4.4/§7): resumes a suspended AudioContext. */
+/** Common unlock path for the first user gesture (SPEC §4.4/§7): resumes a suspended AudioContext and registers the guitar synth's AudioWorklet module. */
 export async function unlockAudio(opts: { audioSessionType?: AudioSessionType } = {}): Promise<void> {
   const ctx = getAudioContext();
   setAudioSessionType(opts.audioSessionType ?? 'playback');
   if (ctx.state === 'suspended') {
     await ctx.resume();
   }
+  await loadGuitarWorkletModule(ctx);
   unlocked = true;
 }
 

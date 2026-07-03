@@ -113,7 +113,17 @@ export function Fretboard({
     <svg
       ref={svgRef}
       viewBox={`0 0 ${VIEW_WIDTH} ${height}`}
-      style={{ touchAction: 'none', display: 'block', width: '100%', height: 'auto', background: 'var(--surface)', borderRadius: 8 }}
+      style={{
+        touchAction: 'none',
+        display: 'block',
+        width: 'auto',
+        height: 'auto',
+        maxWidth: '100%',
+        maxHeight: '100%',
+        aspectRatio: `${VIEW_WIDTH} / ${height}`,
+        background: 'var(--surface)',
+        borderRadius: 8,
+      }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
