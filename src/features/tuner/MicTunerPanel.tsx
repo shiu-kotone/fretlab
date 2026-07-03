@@ -87,7 +87,7 @@ export function MicTunerPanel() {
 
           <CentsMeter cents={reading.cents} inTune={reading.inTune} />
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, maxWidth: 260, margin: '0 auto' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
             {tuning.map((midi, i) => {
               const isHighlighted = highlightIndex === i;
               const isFixed = fixedStringIndex === i;
@@ -96,16 +96,17 @@ export function MicTunerPanel() {
                   key={i}
                   onClick={() => setFixedStringIndex(isFixed ? null : i)}
                   style={{
-                    minHeight: 44,
-                    borderRadius: 8,
+                    minHeight: 64,
+                    borderRadius: 10,
                     border: `1px solid ${isFixed ? 'var(--accent)' : 'var(--line)'}`,
                     background: isHighlighted ? 'var(--accent)' : 'var(--surface)',
                     color: isHighlighted ? 'var(--bg)' : 'var(--string)',
+                    fontSize: 18,
                   }}
                 >
                   {6 - i}弦
                   <br />
-                  <span style={{ fontSize: 11 }}>{noteName(midi, noteNaming)}</span>
+                  <span style={{ fontSize: 13 }}>{noteName(midi, noteNaming)}</span>
                 </button>
               );
             })}

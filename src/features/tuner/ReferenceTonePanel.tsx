@@ -77,7 +77,7 @@ export function ReferenceTonePanel() {
         />
       </label>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, maxWidth: 280, margin: '0 auto' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
         {tuning.map((midi, i) => {
           const isActive = activeString === i;
           return (
@@ -85,16 +85,17 @@ export function ReferenceTonePanel() {
               key={i}
               onClick={() => void playString(i)}
               style={{
-                minHeight: 56,
-                borderRadius: 8,
+                minHeight: 72,
+                borderRadius: 10,
                 border: `1px solid ${isActive ? 'var(--accent)' : 'var(--line)'}`,
                 background: isActive ? 'var(--accent)' : 'var(--surface)',
                 color: isActive ? 'var(--bg)' : 'var(--accent)',
+                fontSize: 18,
               }}
             >
               {6 - i}弦
               <br />
-              <span style={{ fontSize: 12, color: isActive ? 'var(--bg)' : 'var(--string)' }}>
+              <span style={{ fontSize: 14, color: isActive ? 'var(--bg)' : 'var(--string)' }}>
                 {noteName(midi, noteNaming)}
               </span>
             </button>

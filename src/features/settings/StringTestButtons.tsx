@@ -37,22 +37,23 @@ export function StringTestButtons() {
   return (
     <section style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 0' }}>
       <h3 style={{ fontSize: 13, color: 'var(--string)', margin: 0 }}>動作確認: 弦の音を鳴らす</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, maxWidth: 260 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
         {tuning.map((midi, i) => (
           <button
             key={i}
             onClick={() => void playString(i)}
             style={{
-              minHeight: 44,
-              borderRadius: 8,
+              minHeight: 64,
+              borderRadius: 10,
               border: '1px solid var(--line)',
               background: 'var(--surface)',
               color: 'var(--accent)',
+              fontSize: 18,
             }}
           >
             {6 - i}弦
             <br />
-            <span className="tabular-nums" style={{ fontSize: 11, color: 'var(--string)' }}>
+            <span className="tabular-nums" style={{ fontSize: 13, color: 'var(--string)' }}>
               {noteName(midi, { flat: false, solfege: false })}
             </span>
           </button>
