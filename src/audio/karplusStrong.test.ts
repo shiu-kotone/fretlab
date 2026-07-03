@@ -5,6 +5,7 @@ import {
   computeVelocityGain,
   clampSustainSeconds,
   pushVoiceWithLimit,
+  noiseBurstEnvelope,
   MAX_POLYPHONY,
 } from './karplusStrong';
 
@@ -66,6 +67,36 @@ describe('clampSustainSeconds', () => {
     expect(clampSustainSeconds(0.5)).toBe(1.5);
     expect(clampSustainSeconds(10)).toBe(3);
     expect(clampSustainSeconds(2.2)).toBe(2.2);
+  });
+});
+
+describe('noiseBurstEnvelope', () => {
+  it('starts at (or near) zero to avoid a hard onset click', () => {
+    const env = noiseBurstEnvelope(200);
+    expect(env[0]).toBeCloseTo(0, 5);
+  });
+
+  it('ends at (or near) zero to avoid a hard offset click', () => {
+    const env = noiseBurstEnvelope(200);
+    expect(env[env.length - 1]).toBeCloseTo(0, 1);
+  });
+
+  it('reaches full amplitude (1) somewhere in the middle', () => {
+    const env = noiseBurstEnvelope(200);
+    expect(Math.max(...env)).toBeCloseTo(1, 5);
+  });
+
+  it('never exceeds the 0-1 range', () => {
+    const env = noiseBurstEnvelope(500);
+    for (const v of env) {
+      expect(v).toBeGreaterThanOrEqual(0);
+      expect(v).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('handles very short buffers without throwing', () => {
+    expect(() => noiseBurstEnvelope(1)).not.toThrow();
+    expect(() => noiseBurstEnvelope(3)).not.toThrow();
   });
 });
 
