@@ -23,7 +23,7 @@ export interface MicCapture {
   stop: () => void;
 }
 
-/** Taps the mic stream into an AnalyserNode for pitch analysis; never connects to destination (no monitoring loop). */
+/** Taps the mic stream into an AnalyserNode for pitch analysis. */
 export function createMicCapture(stream: MediaStream): MicCapture {
   const ctx = getAudioContext();
   const source = ctx.createMediaStreamSource(stream);
@@ -31,8 +31,20 @@ export function createMicCapture(stream: MediaStream): MicCapture {
   analyser.fftSize = ANALYSER_FFT_SIZE;
   source.connect(analyser);
 
+  // Some engines (notably iOS Safari) only keep pulling fresh data through a
+  // node that's part of a graph reaching the destination; an AnalyserNode
+  // with no path to destination can silently stop updating — no error, it
+  // just always returns stale/zeroed data. Route through a silent (gain 0)
+  // node so the graph is always driven, without audibly monitoring the mic.
+  const silentSink = ctx.createGain();
+  silentSink.gain.value = 0;
+  analyser.connect(silentSink);
+  silentSink.connect(ctx.destination);
+
   const stop = () => {
     source.disconnect();
+    analyser.disconnect();
+    silentSink.disconnect();
     stream.getTracks().forEach((track) => track.stop());
   };
 

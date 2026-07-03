@@ -36,11 +36,20 @@ const INITIAL_READING: TunerReading = {
   nearestStringIndex: null,
 };
 
+export interface TunerDebugInfo {
+  /** RMS level of the raw mic buffer, regardless of whether YIN found a pitch. */
+  level: number;
+  /** Raw (pre-smoothing, pre-confidence-gate) YIN result for this tick. */
+  rawFrequency: number | null;
+  rawConfidence: number;
+}
+
 export function useTunerEngine(tuning: Midi[], a4: number) {
   const [permissionState, setPermissionState] = useState<MicPermissionState>('idle');
   const [fixedStringIndex, setFixedStringIndex] = useState<number | null>(null);
   const [reading, setReading] = useState<TunerReading>(INITIAL_READING);
   const [lastError, setLastError] = useState<string | null>(null);
+  const [debug, setDebug] = useState<TunerDebugInfo>({ level: 0, rawFrequency: null, rawConfidence: 0 });
 
   const captureRef = useRef<MicCapture | null>(null);
   const intervalRef = useRef<number | null>(null);
@@ -63,6 +72,7 @@ export function useTunerEngine(tuning: Midi[], a4: number) {
     smoothedRef.current = initialSmoothedPitchState();
     holdRef.current = initialTuneHoldState();
     setReading(INITIAL_READING);
+    setDebug({ level: 0, rawFrequency: null, rawConfidence: 0 });
     // Hand the audio session back to 'playback' so metronome/guitar sound
     // resumes bypassing the silent switch once the mic is no longer needed.
     setAudioSessionType('playback');
@@ -73,7 +83,13 @@ export function useTunerEngine(tuning: Midi[], a4: number) {
     if (!capture) return;
     const ctx = getAudioContext();
     const buffer = readTimeDomainData(capture.analyser);
-    const { frequency } = yinDetectPitch(buffer, ctx.sampleRate);
+    const { frequency, confidence } = yinDetectPitch(buffer, ctx.sampleRate);
+
+    let sumSq = 0;
+    for (let i = 0; i < buffer.length; i++) sumSq += buffer[i] * buffer[i];
+    const level = Math.sqrt(sumSq / buffer.length);
+    setDebug({ level, rawFrequency: frequency, rawConfidence: confidence });
+
     smoothedRef.current = updateSmoothedPitch(smoothedRef.current, frequency);
     const displayedFrequency = smoothedRef.current.displayedFrequency;
     if (displayedFrequency === null) return;
@@ -115,5 +131,14 @@ export function useTunerEngine(tuning: Midi[], a4: number) {
 
   useEffect(() => stopMic, [stopMic]);
 
-  return { permissionState, requestPermission, stopMic, reading, fixedStringIndex, setFixedStringIndex, lastError };
+  return {
+    permissionState,
+    requestPermission,
+    stopMic,
+    reading,
+    fixedStringIndex,
+    setFixedStringIndex,
+    lastError,
+    debug,
+  };
 }

@@ -16,7 +16,7 @@ export function MicTunerPanel() {
   const tuning = resolveTuning(currentTuningId, customItems);
   const metronomePlaying = useMetronomeStore((s) => s.isPlaying);
 
-  const { permissionState, requestPermission, reading, fixedStringIndex, setFixedStringIndex, lastError } =
+  const { permissionState, requestPermission, reading, fixedStringIndex, setFixedStringIndex, lastError, debug } =
     useTunerEngine(tuning, a4);
 
   const highlightIndex = fixedStringIndex ?? reading.nearestStringIndex;
@@ -87,7 +87,7 @@ export function MicTunerPanel() {
 
           <CentsMeter cents={reading.cents} inTune={reading.inTune} />
 
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, maxWidth: 260, margin: '0 auto' }}>
             {tuning.map((midi, i) => {
               const isHighlighted = highlightIndex === i;
               const isFixed = fixedStringIndex === i;
@@ -96,7 +96,6 @@ export function MicTunerPanel() {
                   key={i}
                   onClick={() => setFixedStringIndex(isFixed ? null : i)}
                   style={{
-                    minWidth: 48,
                     minHeight: 44,
                     borderRadius: 8,
                     border: `1px solid ${isFixed ? 'var(--accent)' : 'var(--line)'}`,
@@ -127,6 +126,11 @@ export function MicTunerPanel() {
               +
             </button>
           </div>
+
+          <p className="tabular-nums" style={{ fontSize: 10, color: 'var(--line)', textAlign: 'center', margin: 0 }}>
+            lvl: {debug.level.toFixed(4)} / raw: {debug.rawFrequency ? `${debug.rawFrequency.toFixed(1)}Hz` : '—'} /
+            conf: {debug.rawConfidence.toFixed(3)}
+          </p>
         </>
       )}
     </div>

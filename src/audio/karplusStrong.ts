@@ -7,6 +7,20 @@ const NOISE_BURST_DURATION = 0.004;
 const RELEASE_TAIL_SECONDS = 0.03;
 /** Safety DC-blocker on the audible output tap, to prevent low-end buildup reading as "muddy". */
 const DC_BLOCKER_FREQUENCY = 20;
+/**
+ * Web Audio's render quantum: the spec processes the graph in fixed 128-
+ * sample blocks, and a cyclic graph (our delay feedback loop) can't resolve
+ * a dependency within the same block it's produced in. Every engine adds
+ * this as a fixed *extra* delay on top of whatever `delayTime` is set,
+ * regardless of note — measured empirically (rendered a known pitch,
+ * detected the actual output period, subtracted the nominal one) and found
+ * to be exactly 128 samples for every note tested, matching the spec's
+ * RENDER_QUANTUM_SIZE constant exactly. Uncompensated, this made every
+ * plucked note sound flat by an amount that grew with pitch (worse for
+ * higher strings, since 128 extra samples is a bigger fraction of a short
+ * period) — e.g. open low E came out roughly a minor 3rd flat.
+ */
+const RENDER_QUANTUM_SAMPLES = 128;
 
 /**
  * Feedback gain for a DelayNode-based Karplus-Strong loop: the amplitude
@@ -160,9 +174,17 @@ export class KarplusStrongSynth {
     excitationGain.gain.value = velocity;
 
     const mainDelay = ctx.createDelay(1);
-    // Compensate for the averaging filter's own ~0.5-sample group delay so
-    // the loop period (and therefore pitch) matches `freq`.
-    mainDelay.delayTime.value = Math.max(0, delayTime - 0.5 * tapDelayTime);
+    // Compensate for the fixed render-quantum feedback latency (see
+    // RENDER_QUANTUM_SAMPLES) and the averaging filter's own ~0.5-sample
+    // group delay, so the loop period (and therefore pitch) matches `freq`.
+    // Note: once the requested period is at or below one render quantum
+    // (~2.9ms at 44.1kHz, i.e. notes above ~344Hz), this floors at 0 and
+    // pitch can no longer track upward — fine for today's open-string-only
+    // callers (highest is open high E ≈330Hz), but this will need a
+    // different approach (e.g. AudioWorklet-based synthesis) before the
+    // fretboard feature needs high fretted notes.
+    const compensation = RENDER_QUANTUM_SAMPLES / ctx.sampleRate + 0.5 * tapDelayTime;
+    mainDelay.delayTime.value = Math.max(0, delayTime - compensation);
 
     // 2-tap moving average: direct copy + a 1-sample-delayed copy, each at
     // half gain. Both destinations below receive this same summed signal.

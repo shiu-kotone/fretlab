@@ -77,7 +77,7 @@ export function ReferenceTonePanel() {
         />
       </label>
 
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, maxWidth: 280, margin: '0 auto' }}>
         {tuning.map((midi, i) => {
           const isActive = activeString === i;
           return (
@@ -85,7 +85,6 @@ export function ReferenceTonePanel() {
               key={i}
               onClick={() => void playString(i)}
               style={{
-                minWidth: 52,
                 minHeight: 56,
                 borderRadius: 8,
                 border: `1px solid ${isActive ? 'var(--accent)' : 'var(--line)'}`,
