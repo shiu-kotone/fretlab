@@ -10,7 +10,7 @@ import {
   initialTuneHoldState,
   updateTuneHold,
 } from '../../theory/tunerMath';
-import { unlockAudio, getAudioContext } from '../../audio/AudioEngine';
+import { unlockAudio, getAudioContext, setAudioSessionType } from '../../audio/AudioEngine';
 
 /** SPEC §5.5 polling cadence: not tied to requestAnimationFrame, to bound CPU/battery use on iOS. */
 const POLL_INTERVAL_MS = 50;
@@ -63,6 +63,9 @@ export function useTunerEngine(tuning: Midi[], a4: number) {
     smoothedRef.current = initialSmoothedPitchState();
     holdRef.current = initialTuneHoldState();
     setReading(INITIAL_READING);
+    // Hand the audio session back to 'playback' so metronome/guitar sound
+    // resumes bypassing the silent switch once the mic is no longer needed.
+    setAudioSessionType('playback');
   }, []);
 
   const tick = useCallback(() => {
@@ -91,7 +94,9 @@ export function useTunerEngine(tuning: Midi[], a4: number) {
     setPermissionState('requesting');
     setLastError(null);
     try {
-      await unlockAudio();
+      // 'play-and-record': the 'playback' category set elsewhere in the app
+      // is output-only and rejects getUserMedia with InvalidStateError.
+      await unlockAudio({ audioSessionType: 'play-and-record' });
       const stream = await requestMicStream();
       captureRef.current = createMicCapture(stream);
       setPermissionState('granted');

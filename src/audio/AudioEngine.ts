@@ -72,21 +72,32 @@ export function setGuitarVolume(volume0to100: number): void {
   getGuitarGain().gain.value = Math.max(0, Math.min(1, volume0to100 / 100));
 }
 
+export type AudioSessionType = 'playback' | 'play-and-record';
+
 /**
- * Common unlock path for the first user gesture (SPEC §4.4/§7): resumes a
- * suspended AudioContext and requests iOS's `playback` audio session type so
- * sound is audible even with the silent switch engaged, where supported.
+ * SPEC §4.4/§7: iOS's `playback` audio session category is what makes sound
+ * audible even with the silent switch engaged — but it's output-only and is
+ * *incompatible* with microphone capture (attempting getUserMedia while it's
+ * active throws `InvalidStateError: AudioSession category is not compatible
+ * with audio capture`). The tuner must switch to `play-and-record` before
+ * requesting the mic, and switch back once it's done so playback elsewhere
+ * in the app keeps bypassing the silent switch.
  */
-export async function unlockAudio(): Promise<void> {
-  const ctx = getAudioContext();
+export function setAudioSessionType(type: AudioSessionType): void {
   const nav = navigator as NavigatorWithAudioSession;
   if (nav.audioSession) {
     try {
-      nav.audioSession.type = 'playback';
+      nav.audioSession.type = type;
     } catch {
-      // Unsupported: silent-switch behavior is out of our control on this device.
+      // Unsupported: silent-switch/mic-session behavior is out of our control on this device.
     }
   }
+}
+
+/** Common unlock path for the first user gesture (SPEC §4.4/§7): resumes a suspended AudioContext. */
+export async function unlockAudio(opts: { audioSessionType?: AudioSessionType } = {}): Promise<void> {
+  const ctx = getAudioContext();
+  setAudioSessionType(opts.audioSessionType ?? 'playback');
   if (ctx.state === 'suspended') {
     await ctx.resume();
   }
