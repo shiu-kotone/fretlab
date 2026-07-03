@@ -1,0 +1,76 @@
+:root {
+  --bg: #16130f;
+  --surface: #221d17;
+  --line: #3a322a;
+  --accent: #e8a33d;
+  --string: #c8cdd4;
+  --ok: #6fbf73;
+  --warn: #e0564b;
+
+  --degree-root: var(--accent);
+  --degree-third: #d96c5f;
+  --degree-fifth: #5f9ed9;
+  --degree-seventh: #9c7bd9;
+  --degree-tension: #7a8794;
+
+  --font-display: 'Archivo', 'Bricolage Grotesque', -apple-system, sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif;
+
+  color-scheme: dark;
+}
+
+/*
+ * Theme is resolved in JS (App.tsx) from the settings store's 'system' /
+ * 'dark' / 'light' preference and applied as [data-theme] on <html>, so an
+ * explicit user choice always wins over the OS setting (SPEC §4.6).
+ */
+:root[data-theme='light'] {
+  --bg: #f4efe8;
+  --surface: #ffffff;
+  --line: #ddd4c6;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--string);
+  font-family: var(--font-body);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+button {
+  font-family: inherit;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-display);
+}
+
+@keyframes metronome-flash {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
