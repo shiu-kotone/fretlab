@@ -9,7 +9,7 @@ import type { StringOrientation } from '../../stores/fretboardStore';
  */
 export const VIEW_WIDTH = 1000;
 export const OPEN_ZONE_WIDTH = 70;
-export const STRING_SPACING = 64;
+export const STRING_SPACING = 76;
 export const TOP_MARGIN = 50;
 /** Extra room below the last string for position-dot markers and fret numbers. */
 export const BOTTOM_MARGIN = 90;
