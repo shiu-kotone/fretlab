@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { TabBar, type TabId } from './components/TabBar';
 import { Placeholder } from './components/Placeholder';
 import { MetronomeView } from './features/metronome/MetronomeView';
+import { TunerView } from './features/tuner/TunerView';
 import { LabView } from './features/settings/LabView';
 import { useMetronomeStore } from './stores/metronomeStore';
 import { useSettingsStore, resolveThemeMode } from './stores/settingsStore';
@@ -89,7 +90,7 @@ export default function App() {
         </div>
         {tab === 'fretboard' && <Placeholder title="指板" />}
         {tab === 'chords' && <Placeholder title="コード" />}
-        {tab === 'tuner' && <Placeholder title="チューナー" />}
+        {tab === 'tuner' && <TunerView />}
         {tab === 'lab' && <LabView />}
       </main>
       <TabBar active={tab} onChange={setTab} badges={{ metronome: isPlaying }} />
