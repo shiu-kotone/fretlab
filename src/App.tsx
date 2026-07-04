@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { TabBar } from './components/TabBar';
 import { MetronomeView } from './features/metronome/MetronomeView';
 import { FretboardView } from './features/fretboard/FretboardView';
-import { ChordLibraryView } from './features/chords/ChordLibraryView';
+import { ChordTabView } from './features/chords/ChordTabView';
 import { TunerView } from './features/tuner/TunerView';
 import { LabView } from './features/settings/LabView';
 import { useMetronomeStore } from './stores/metronomeStore';
@@ -92,7 +92,7 @@ export default function App() {
           <MetronomeView />
         </div>
         {tab === 'fretboard' && <FretboardView />}
-        {tab === 'chords' && <ChordLibraryView />}
+        {tab === 'chords' && <ChordTabView />}
         {tab === 'tuner' && <TunerView />}
         {tab === 'lab' && <LabView />}
       </main>

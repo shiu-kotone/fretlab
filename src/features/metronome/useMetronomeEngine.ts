@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMetronomeStore, type SpeedTrainerSettings, type MuteBarsSettings } from '../../stores/metronomeStore';
+import { usePlaybackCoordinatorStore } from '../../stores/playbackCoordinatorStore';
 import { getAudioContext, getClickGain, setClickVolume, unlockAudio } from '../../audio/AudioEngine';
 import { LookaheadScheduler } from '../../audio/LookaheadScheduler';
 import { synthesizeClick, type ClickLevel } from '../../audio/click';
@@ -45,9 +46,23 @@ export function useMetronomeEngine() {
     wakeLockRef.current = null;
     useMetronomeStore.getState().setIsPlaying(false);
     setFlash(null);
+    usePlaybackCoordinatorStore.getState().release('metronome');
   }, []);
 
+  // SPEC §4.5: progression playback claims exclusive ownership on start; stop
+  // if it takes over while we're still playing.
+  useEffect(
+    () =>
+      usePlaybackCoordinatorStore.subscribe((s) => {
+        if (s.activeOwner !== 'metronome' && useMetronomeStore.getState().isPlaying) {
+          stop();
+        }
+      }),
+    [stop],
+  );
+
   const start = useCallback(async () => {
+    usePlaybackCoordinatorStore.getState().claim('metronome');
     await unlockAudio();
     const ctx = getAudioContext();
     setClickVolume(useMetronomeStore.getState().clickVolume);

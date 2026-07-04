@@ -1,7 +1,7 @@
 import { OPEN_CHORDS } from './openChords';
 import { generateMovableVoicings } from './movableForms';
 import type { Voicing } from './voicingTypes';
-import type { ChordTypeId } from '../theory/chords';
+import { CHORD_TYPES, type ChordTypeId } from '../theory/chords';
 
 function voicingKey(v: Voicing): string {
   return v.frets.join(',');
@@ -22,4 +22,63 @@ export function getVoicingsForChord(root: number, typeId: ChordTypeId): Voicing[
   }
   combined.sort((a, b) => a.baseFret - b.baseFret);
   return combined;
+}
+
+/** SPEC §5.3 progression data model's `chordId`: a stable, parseable (root, type) reference. */
+export function chordIdFor(root: number, typeId: ChordTypeId): string {
+  return `${root}-${typeId}`;
+}
+
+export function parseChordId(chordId: string): { root: number; typeId: ChordTypeId } | null {
+  const match = /^(\d{1,2})-(.+)$/.exec(chordId);
+  if (!match) return null;
+  const root = Number(match[1]);
+  if (!Number.isInteger(root) || root < 0 || root > 11) return null;
+  const typeId = match[2];
+  if (!CHORD_TYPES.some((t) => t.id === typeId)) return null;
+  return { root, typeId: typeId as ChordTypeId };
+}
+
+export interface TransposedChordRef {
+  root: number;
+  voicingIndex: number;
+}
+
+/**
+ * SPEC §5.3 transpose rule: movable-form voicings "slide" as the same shape
+ * (same `label`, nearest resulting position); open-position voicings can't
+ * slide, so they're replaced by whichever voicing at the new root lands
+ * closest to that same position. Re-derives from the existing generated
+ * library rather than shifting fret numbers by hand, so this can never
+ * produce an invalid voicing.
+ */
+export function pickTransposedVoicing(
+  root: number,
+  typeId: ChordTypeId,
+  voicingIndex: number,
+  semitones: number,
+): TransposedChordRef {
+  const newRoot = ((root + semitones) % 12 + 12) % 12;
+  const candidates = getVoicingsForChord(newRoot, typeId);
+  const current = getVoicingsForChord(root, typeId)[voicingIndex];
+
+  if (!current || candidates.length === 0) {
+    return { root: newRoot, voicingIndex: 0 };
+  }
+
+  const targetBaseFret = current.baseFret + semitones;
+  const sameLabelPool = current.label === 'オープン' ? [] : candidates.filter((c) => c.label === current.label);
+  const pool = sameLabelPool.length > 0 ? sameLabelPool : candidates;
+
+  let bestIndex = 0;
+  let bestDistance = Infinity;
+  for (const candidate of pool) {
+    const distance = Math.abs(candidate.baseFret - targetBaseFret);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestIndex = candidates.indexOf(candidate);
+    }
+  }
+
+  return { root: newRoot, voicingIndex: bestIndex };
 }
