@@ -1,4 +1,6 @@
 import { useMetronomeStore } from '../../stores/metronomeStore';
+import { Toggle } from '../../components/ui/Toggle';
+import { Button } from '../../components/ui/Button';
 
 export function TrainerSettings() {
   const speedTrainer = useMetronomeStore((s) => s.speedTrainer);
@@ -13,11 +15,7 @@ export function TrainerSettings() {
       <div style={panelStyle}>
         <label style={toggleRow}>
           <span>スピードトレーナー</span>
-          <input
-            type="checkbox"
-            checked={speedTrainer.enabled}
-            onChange={(e) => setSpeedTrainer({ enabled: e.target.checked })}
-          />
+          <Toggle checked={speedTrainer.enabled} onChange={(e) => setSpeedTrainer({ enabled: e.target.checked })} aria-label="スピードトレーナー" />
         </label>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', opacity: speedTrainer.enabled ? 1 : 0.4 }}>
           <NumberField
@@ -50,11 +48,7 @@ export function TrainerSettings() {
       <div style={panelStyle}>
         <label style={toggleRow}>
           <span>ミュート小節</span>
-          <input
-            type="checkbox"
-            checked={muteBars.enabled}
-            onChange={(e) => setMuteBars({ enabled: e.target.checked })}
-          />
+          <Toggle checked={muteBars.enabled} onChange={(e) => setMuteBars({ enabled: e.target.checked })} aria-label="ミュート小節" />
         </label>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', opacity: muteBars.enabled ? 1 : 0.4 }}>
           <NumberField
@@ -93,25 +87,15 @@ function NumberField({ label, value, min, max, disabled, onChange }: NumberField
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       <span style={{ fontSize: 12, color: 'var(--string)' }}>{label}</span>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <button
-          disabled={disabled}
-          aria-label={`${label}を減らす`}
-          onClick={() => onChange(value - 1)}
-          style={stepperButton}
-        >
+        <Button size="small" disabled={disabled} aria-label={`${label}を減らす`} onClick={() => onChange(value - 1)}>
           −
-        </button>
+        </Button>
         <span className="tabular-nums" style={{ minWidth: 32, textAlign: 'center' }}>
           {value}
         </span>
-        <button
-          disabled={disabled}
-          aria-label={`${label}を増やす`}
-          onClick={() => onChange(value + 1)}
-          style={stepperButton}
-        >
+        <Button size="small" disabled={disabled} aria-label={`${label}を増やす`} onClick={() => onChange(value + 1)}>
           +
-        </button>
+        </Button>
       </div>
       <span style={{ fontSize: 10, color: 'var(--line)' }}>
         {min}–{max}
@@ -133,13 +117,5 @@ const toggleRow = {
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-};
-
-const stepperButton = {
-  minWidth: 36,
-  minHeight: 36,
-  borderRadius: 6,
-  border: '1px solid var(--line)',
-  background: 'var(--surface)',
-  color: 'var(--string)',
+  minHeight: 44,
 };

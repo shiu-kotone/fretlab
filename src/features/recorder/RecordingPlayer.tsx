@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import type { RecordingMeta } from '../../stores/recordingsStore';
 import { formatDuration } from '../../audio/recorder';
+import { Button } from '../../components/ui/Button';
+import { Chip } from '../../components/ui/Chip';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 
 interface RecordingPlayerProps {
   recording: RecordingMeta;
@@ -20,6 +23,7 @@ export function RecordingPlayer({ recording, onRename, onDelete, getBlob }: Reco
   const [loopA, setLoopA] = useState<number | null>(null);
   const [loopB, setLoopB] = useState<number | null>(null);
   const [name, setName] = useState(recording.name);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -108,7 +112,7 @@ export function RecordingPlayer({ recording, onRename, onDelete, getBlob }: Reco
         value={position}
         onChange={(e) => seek(Number(e.target.value))}
         aria-label="再生位置"
-        style={{ width: '100%' }}
+        className="slider"
       />
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--line)' }}>
         <span className="tabular-nums">{formatDuration(position)}</span>
@@ -116,61 +120,53 @@ export function RecordingPlayer({ recording, onRename, onDelete, getBlob }: Reco
       </div>
 
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-        <button onClick={togglePlay} style={smallButtonStyle}>
+        <Button size="small" onClick={togglePlay}>
           {playing ? '一時停止' : '再生'}
-        </button>
-        <button onClick={() => setLoopA(position)} style={chipStyle(loopA !== null)}>
+        </Button>
+        <Chip active={loopA !== null} onClick={() => setLoopA(position)}>
           A{loopA !== null ? `:${formatDuration(loopA)}` : ''}
-        </button>
-        <button onClick={() => setLoopB(position)} style={chipStyle(loopB !== null)}>
+        </Chip>
+        <Chip active={loopB !== null} onClick={() => setLoopB(position)}>
           B{loopB !== null ? `:${formatDuration(loopB)}` : ''}
-        </button>
-        <button onClick={() => { setLoopA(null); setLoopB(null); }} disabled={loopA === null && loopB === null} style={smallButtonStyle}>
+        </Chip>
+        <Button
+          size="small"
+          onClick={() => {
+            setLoopA(null);
+            setLoopB(null);
+          }}
+          disabled={loopA === null && loopB === null}
+        >
           ループ解除
-        </button>
-        <button onClick={() => setRate(rate === 1 ? 0.75 : 1)} style={smallButtonStyle}>
+        </Button>
+        <Button size="small" onClick={() => setRate(rate === 1 ? 0.75 : 1)}>
           {rate}x
-        </button>
+        </Button>
       </div>
 
       <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-        <button onClick={handleShare} style={smallButtonStyle}>
+        <Button size="small" onClick={() => void handleShare()}>
           共有
-        </button>
-        <button
-          onClick={() => {
-            if (window.confirm(`「${recording.name}」を削除しますか？`)) onDelete();
-          }}
-          style={{ ...smallButtonStyle, color: 'var(--warn)' }}
-        >
+        </Button>
+        <Button size="small" variant="danger" onClick={() => setConfirmingDelete(true)}>
           削除
-        </button>
+        </Button>
+        <ConfirmDialog
+          open={confirmingDelete}
+          title="録音を削除"
+          message={`「${recording.name}」を削除しますか？`}
+          confirmLabel="削除"
+          danger
+          onConfirm={() => {
+            setConfirmingDelete(false);
+            onDelete();
+          }}
+          onCancel={() => setConfirmingDelete(false)}
+        />
       </div>
     </div>
   );
 }
-
-function chipStyle(active: boolean) {
-  return {
-    minHeight: 36,
-    padding: '0 10px',
-    borderRadius: 8,
-    border: `1px solid ${active ? 'var(--accent)' : 'var(--line)'}`,
-    background: active ? 'var(--accent)' : 'var(--bg)',
-    color: active ? 'var(--bg)' : 'var(--string)',
-    fontSize: 12,
-  };
-}
-
-const smallButtonStyle = {
-  minHeight: 36,
-  padding: '0 10px',
-  borderRadius: 8,
-  border: '1px solid var(--line)',
-  background: 'var(--bg)',
-  color: 'var(--string)',
-  fontSize: 12,
-};
 
 const nameInputStyle = {
   minHeight: 40,

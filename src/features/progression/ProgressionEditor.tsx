@@ -7,6 +7,9 @@ import { STRUM_PATTERNS } from '../../data/strumPatterns';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { noteName } from '../../theory/pitch';
 import { chordIdLabel } from './chordLabel';
+import { Button } from '../../components/ui/Button';
+import { Chip } from '../../components/ui/Chip';
+import { Toggle } from '../../components/ui/Toggle';
 
 const GROUP_LABELS: Record<ChordGroup, string> = { basic: '基本', seventh: 'セブンス', tension: 'テンション', other: 'その他' };
 const GROUPS: ChordGroup[] = ['basic', 'seventh', 'tension', 'other'];
@@ -154,11 +157,11 @@ export function ProgressionEditor({ progression, readOnly, onSave, onDuplicateAn
   return (
     <div style={{ padding: '12px 16px 32px', display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button onClick={onBack} style={smallButtonStyle}>
+        <Button size="small" onClick={onBack}>
           ← 一覧
-        </button>
+        </Button>
         {readOnly && (
-          <button onClick={onDuplicateAndEdit} style={{ ...smallButtonStyle, borderColor: 'var(--accent)', color: 'var(--accent)' }}>
+          <button onClick={onDuplicateAndEdit} className="btn btn-small" style={{ borderColor: 'var(--accent)', color: 'var(--accent)' }}>
             複製して編集
           </button>
         )}
@@ -174,53 +177,43 @@ export function ProgressionEditor({ progression, readOnly, onSave, onDuplicateAn
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
         <Stepper label="BPM" value={draft.bpm} min={40} max={240} disabled={readOnly} onChange={(v) => setDraft((d) => ({ ...d, bpm: v }))} />
-        <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 13, color: 'var(--string)' }}>
-          <input type="checkbox" checked={draft.loop} disabled={readOnly} onChange={(e) => setDraft((d) => ({ ...d, loop: e.target.checked }))} />
+        <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 13, color: 'var(--string)', minHeight: 44 }}>
+          <Toggle checked={draft.loop} disabled={readOnly} onChange={(e) => setDraft((d) => ({ ...d, loop: e.target.checked }))} aria-label="ループ再生" />
           ループ再生
         </label>
       </div>
 
       <div style={{ display: 'flex', gap: 6 }}>
         {TIME_SIG_PRESETS.map((sig) => (
-          <button
-            key={`${sig.beats}/${sig.unit}`}
-            disabled={readOnly}
-            onClick={() => changeTimeSig(sig)}
-            style={chipStyle(draft.timeSig.beats === sig.beats && draft.timeSig.unit === sig.unit)}
-          >
+          <Chip key={`${sig.beats}/${sig.unit}`} disabled={readOnly} active={draft.timeSig.beats === sig.beats && draft.timeSig.unit === sig.unit} onClick={() => changeTimeSig(sig)}>
             {sig.beats}/{sig.unit}
-          </button>
+          </Chip>
         ))}
       </div>
 
       <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
         {STRUM_PATTERNS.map((p) => (
-          <button
-            key={p.id}
-            disabled={readOnly}
-            onClick={() => setDraft((d) => ({ ...d, strumPatternId: p.id }))}
-            style={chipStyle(draft.strumPatternId === p.id)}
-          >
+          <Chip key={p.id} disabled={readOnly} active={draft.strumPatternId === p.id} onClick={() => setDraft((d) => ({ ...d, strumPatternId: p.id }))}>
             {p.label}
-          </button>
+          </Chip>
         ))}
       </div>
 
       {!readOnly && (
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <span style={{ fontSize: 13, color: 'var(--line)' }}>移調</span>
-          <button onClick={() => transpose(-1)} style={smallButtonStyle}>
+          <Button size="small" onClick={() => transpose(-1)}>
             -1
-          </button>
-          <button onClick={() => transpose(1)} style={smallButtonStyle}>
+          </Button>
+          <Button size="small" onClick={() => transpose(1)}>
             +1
-          </button>
+          </Button>
         </div>
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
         {draft.bars.map((bar, i) => (
-          <button key={i} onClick={() => setEditingBarIndex(editingBarIndex === i ? null : i)} style={barBoxStyle(editingBarIndex === i)}>
+          <button key={i} onClick={() => setEditingBarIndex(editingBarIndex === i ? null : i)} className="tap-row" style={barBoxStyle(editingBarIndex === i)}>
             <div style={{ fontSize: 10, color: 'var(--line)' }}>{i + 1}</div>
             <div style={{ fontSize: 13 }}>{bar.chords.map((c) => chordIdLabel(c.chordId, noteNaming)).join(' / ')}</div>
           </button>
@@ -228,9 +221,9 @@ export function ProgressionEditor({ progression, readOnly, onSave, onDuplicateAn
       </div>
 
       {!readOnly && (
-        <button onClick={addBar} disabled={draft.bars.length >= 64} style={smallButtonStyle}>
+        <Button size="small" onClick={addBar} disabled={draft.bars.length >= 64}>
           + 小節を追加
-        </button>
+        </Button>
       )}
 
       {editingBarIndex !== null && draft.bars[editingBarIndex] && (
@@ -262,13 +255,13 @@ export function ProgressionEditor({ progression, readOnly, onSave, onDuplicateAn
       )}
 
       {!readOnly && (
-        <button onClick={handleSave} disabled={errors.length > 0} style={primaryButtonStyle}>
+        <button onClick={handleSave} disabled={errors.length > 0} className="btn btn-primary" style={primaryButtonStyle}>
           保存
         </button>
       )}
-      <button onClick={() => onPlay(draft)} disabled={errors.length > 0} style={smallButtonStyle}>
+      <Button size="small" onClick={() => onPlay(draft)} disabled={errors.length > 0}>
         再生する
-      </button>
+      </Button>
     </div>
   );
 }
@@ -311,28 +304,28 @@ function BarEditorPanel({
   return (
     <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 8, padding: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-        <button onClick={onMoveUp} style={smallButtonStyle}>
+        <Button size="small" onClick={onMoveUp}>
           ▲
-        </button>
-        <button onClick={onMoveDown} style={smallButtonStyle}>
+        </Button>
+        <Button size="small" onClick={onMoveDown}>
           ▼
-        </button>
+        </Button>
         {!readOnly && (
           <>
-            <button onClick={onDuplicate} style={smallButtonStyle}>
+            <Button size="small" onClick={onDuplicate}>
               複製
-            </button>
-            <button onClick={onDelete} disabled={!canDelete} style={{ ...smallButtonStyle, color: 'var(--warn)' }}>
+            </Button>
+            <Button size="small" variant="danger" onClick={onDelete} disabled={!canDelete}>
               削除
-            </button>
+            </Button>
             {bar.chords.length === 1 ? (
-              <button onClick={onSplit} style={smallButtonStyle}>
+              <Button size="small" onClick={onSplit}>
                 分割
-              </button>
+              </Button>
             ) : (
-              <button onClick={onMerge} style={smallButtonStyle}>
+              <Button size="small" onClick={onMerge}>
                 結合
-              </button>
+              </Button>
             )}
           </>
         )}
@@ -345,49 +338,34 @@ function BarEditorPanel({
           <div key={slotIndex} style={{ display: 'flex', flexDirection: 'column', gap: 6, borderTop: slotIndex > 0 ? '1px solid var(--line)' : undefined, paddingTop: slotIndex > 0 ? 8 : 0 }}>
             <div style={{ display: 'flex', gap: 4, overflowX: 'auto', paddingBottom: 2 }}>
               {Array.from({ length: 12 }, (_, pc) => pc).map((pc) => (
-                <button
-                  key={pc}
-                  disabled={readOnly}
-                  onClick={() => onUpdateSlot(barIndex, slotIndex, pc, parsed?.typeId ?? 'maj')}
-                  style={chipStyle(parsed?.root === pc)}
-                >
+                <Chip key={pc} disabled={readOnly} active={parsed?.root === pc} onClick={() => onUpdateSlot(barIndex, slotIndex, pc, parsed?.typeId ?? 'maj')}>
                   {noteName(60 + pc, noteNaming).replace(/\d+$/, '')}
-                </button>
+                </Chip>
               ))}
             </div>
             {GROUPS.map((group) => (
               <div key={group} style={{ display: 'flex', gap: 4, overflowX: 'auto', paddingBottom: 2, alignItems: 'center' }}>
                 <span style={{ fontSize: 10, color: 'var(--line)', flexShrink: 0, minWidth: 40 }}>{GROUP_LABELS[group]}</span>
                 {CHORD_TYPES.filter((t) => t.group === group).map((t) => (
-                  <button
-                    key={t.id}
-                    disabled={readOnly}
-                    onClick={() => onUpdateSlot(barIndex, slotIndex, parsed?.root ?? 0, t.id)}
-                    style={chipStyle(parsed?.typeId === t.id)}
-                  >
+                  <Chip key={t.id} disabled={readOnly} active={parsed?.typeId === t.id} onClick={() => onUpdateSlot(barIndex, slotIndex, parsed?.root ?? 0, t.id)}>
                     {t.symbol || 'maj'}
-                  </button>
+                  </Chip>
                 ))}
               </div>
             ))}
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <span style={{ fontSize: 12, color: 'var(--line)' }}>ボイシング {slot.voicingIndex + 1}/{voicingCount}</span>
-              <button disabled={readOnly} onClick={() => onUpdateSlotVoicing(barIndex, slotIndex, -1)} style={smallButtonStyle}>
+              <span style={{ fontSize: 12, color: 'var(--line)' }}>
+                ボイシング {slot.voicingIndex + 1}/{voicingCount}
+              </span>
+              <Button size="small" disabled={readOnly} onClick={() => onUpdateSlotVoicing(barIndex, slotIndex, -1)}>
                 ←
-              </button>
-              <button disabled={readOnly} onClick={() => onUpdateSlotVoicing(barIndex, slotIndex, 1)} style={smallButtonStyle}>
+              </Button>
+              <Button size="small" disabled={readOnly} onClick={() => onUpdateSlotVoicing(barIndex, slotIndex, 1)}>
                 →
-              </button>
+              </Button>
             </div>
             {bar.chords.length === 2 && slotIndex === 0 && (
-              <Stepper
-                label="拍数"
-                value={slot.beats}
-                min={1}
-                max={timeSig.beats - 1}
-                disabled={readOnly}
-                onChange={(v) => onUpdateSlotBeats(barIndex, v)}
-              />
+              <Stepper label="拍数" value={slot.beats} min={1} max={timeSig.beats - 1} disabled={readOnly} onChange={(v) => onUpdateSlotBeats(barIndex, v)} />
             )}
           </div>
         );
@@ -400,30 +378,17 @@ function Stepper({ label, value, min, max, disabled, onChange }: { label: string
   return (
     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
       <span style={{ fontSize: 12, color: 'var(--line)' }}>{label}</span>
-      <button disabled={disabled} onClick={() => onChange(Math.max(min, value - 1))} style={smallButtonStyle}>
+      <Button size="small" disabled={disabled} onClick={() => onChange(Math.max(min, value - 1))}>
         −
-      </button>
+      </Button>
       <span className="tabular-nums" style={{ fontSize: 14, color: 'var(--string)', minWidth: 28, textAlign: 'center' }}>
         {value}
       </span>
-      <button disabled={disabled} onClick={() => onChange(Math.min(max, value + 1))} style={smallButtonStyle}>
+      <Button size="small" disabled={disabled} onClick={() => onChange(Math.min(max, value + 1))}>
         +
-      </button>
+      </Button>
     </div>
   );
-}
-
-function chipStyle(active: boolean) {
-  return {
-    minHeight: 36,
-    padding: '0 10px',
-    borderRadius: 8,
-    border: `1px solid ${active ? 'var(--accent)' : 'var(--line)'}`,
-    background: active ? 'var(--accent)' : 'var(--bg)',
-    color: active ? 'var(--bg)' : 'var(--string)',
-    fontSize: 12,
-    flexShrink: 0,
-  };
 }
 
 function barBoxStyle(active: boolean) {
@@ -441,24 +406,11 @@ function barBoxStyle(active: boolean) {
   };
 }
 
-const smallButtonStyle = {
-  minHeight: 40,
-  padding: '0 12px',
-  borderRadius: 6,
-  border: '1px solid var(--line)',
-  background: 'var(--surface)',
-  color: 'var(--string)',
-  fontSize: 12,
-};
-
 const primaryButtonStyle = {
   minHeight: 48,
-  borderRadius: 8,
-  border: 'none',
-  background: 'var(--accent)',
-  color: 'var(--bg)',
   fontSize: 15,
   fontFamily: 'var(--font-display)',
+  fontWeight: 700,
 };
 
 const nameInputStyle = {

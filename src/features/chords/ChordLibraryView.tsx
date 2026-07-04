@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type PointerEvent } from 'react';
+import { useMemo, useState } from 'react';
 import { ChordDiagram } from './ChordDiagram';
 import { useChordPlayback } from './useChordPlayback';
 import { useChordLibraryStore, isFavoriteChord } from '../../stores/chordLibraryStore';
@@ -11,16 +11,17 @@ import { parseChordSymbol } from '../../theory/chordParser';
 import { noteName } from '../../theory/pitch';
 import { isRegularTuning } from '../../theory/tuningResolver';
 import { useActivityTimeTracker } from '../practiceLog/useActivityTimeTracker';
+import { Chip } from '../../components/ui/Chip';
+import { Button } from '../../components/ui/Button';
+import { SegmentedControl } from '../../components/ui/SegmentedControl';
 
 const ROOT_PITCH_CLASSES = Array.from({ length: 12 }, (_, i) => i);
-const GROUP_LABELS: Record<ChordGroup, string> = {
-  basic: '基本',
-  seventh: 'セブンス',
-  tension: 'テンション',
-  other: 'その他',
-};
-const GROUPS: ChordGroup[] = ['basic', 'seventh', 'tension', 'other'];
-const LONG_PRESS_MS = 400;
+const GROUP_OPTIONS: { id: ChordGroup; label: string }[] = [
+  { id: 'basic', label: '基本' },
+  { id: 'seventh', label: 'セブンス' },
+  { id: 'tension', label: 'テンション' },
+  { id: 'other', label: 'その他' },
+];
 
 export function ChordLibraryView() {
   // The コード tab stays mounted in the background (SPEC §3.1, progression
@@ -51,8 +52,7 @@ export function ChordLibraryView() {
   const { strum, arpeggio } = useChordPlayback();
 
   const [searchText, setSearchText] = useState('');
-  const longPressTimer = useRef<number | null>(null);
-  const longPressFired = useRef(false);
+  const [activeGroup, setActiveGroup] = useState<ChordGroup>(CHORD_TYPES.find((t) => t.id === selectedType)?.group ?? 'basic');
 
   const voicings = useMemo(() => getVoicingsForChord(selectedRoot, selectedType), [selectedRoot, selectedType]);
   const voicingIndex = Math.min(selectedVoicingIndex, Math.max(0, voicings.length - 1));
@@ -67,33 +67,8 @@ export function ChordLibraryView() {
     if (parsed) {
       setSelectedRoot(parsed.root);
       setSelectedType(parsed.type as ChordTypeId);
-    }
-  };
-
-  const clearLongPressTimer = () => {
-    if (longPressTimer.current !== null) {
-      window.clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-  };
-
-  const handlePlayPointerDown = (e: PointerEvent<HTMLButtonElement>) => {
-    // Pointer capture keeps this element receiving the up/cancel events even
-    // if the finger drifts slightly during the hold — without it, a real
-    // touchscreen tap can be reinterpreted as a scroll gesture inside the
-    // scrollable page and the button never sees a pointerup at all.
-    e.currentTarget.setPointerCapture(e.pointerId);
-    longPressFired.current = false;
-    longPressTimer.current = window.setTimeout(() => {
-      longPressFired.current = true;
-      arpeggio(voicing);
-    }, LONG_PRESS_MS);
-  };
-
-  const handlePlayPointerUp = () => {
-    clearLongPressTimer();
-    if (!longPressFired.current) {
-      strum(voicing);
+      const group = CHORD_TYPES.find((t) => t.id === parsed.type)?.group;
+      if (group) setActiveGroup(group);
     }
   };
 
@@ -110,9 +85,9 @@ export function ChordLibraryView() {
       <div style={{ padding: '8px 16px 32px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ margin: 0, color: 'var(--string)' }}>お気に入り</h2>
-          <button onClick={() => setShowFavoritesOnly(false)} style={toolbarButtonStyle(true)}>
+          <Button variant="primary" onClick={() => setShowFavoritesOnly(false)}>
             ★ 一覧を閉じる
-          </button>
+          </Button>
         </div>
         {favorites.length === 0 && <p style={{ color: 'var(--line)' }}>お気に入りはまだありません。</p>}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -121,18 +96,19 @@ export function ChordLibraryView() {
             if (!def) return null;
             const name = `${noteName(60 + fav.root, noteNaming).replace(/\d+$/, '')}${def.symbol}`;
             return (
-              <button
+              <Button
                 key={`${fav.root}-${fav.typeId}-${fav.voicingIndex}`}
                 onClick={() => {
                   setSelectedRoot(fav.root);
                   setSelectedType(fav.typeId);
                   setSelectedVoicingIndex(fav.voicingIndex);
+                  setActiveGroup(def.group);
                   setShowFavoritesOnly(false);
                 }}
-                style={{ ...toolbarButtonStyle(false), textAlign: 'left', justifyContent: 'flex-start' }}
+                style={{ textAlign: 'left', justifyContent: 'flex-start' }}
               >
                 {name}({fav.voicingIndex + 1})
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -141,7 +117,7 @@ export function ChordLibraryView() {
   }
 
   return (
-    <div style={{ padding: '8px 16px 32px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div style={{ padding: '8px 16px 32px', display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         <input
           type="text"
@@ -150,9 +126,9 @@ export function ChordLibraryView() {
           placeholder="コード検索 (例: C#m7b5)"
           style={searchInputStyle}
         />
-        <button onClick={() => setShowFavoritesOnly(true)} style={toolbarButtonStyle(false)} aria-label="お気に入り一覧">
+        <Button onClick={() => setShowFavoritesOnly(true)} aria-label="お気に入り一覧">
           ★
-        </button>
+        </Button>
       </div>
 
       {!isRegularTuning(currentTuningId) && (
@@ -161,27 +137,25 @@ export function ChordLibraryView() {
 
       <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
         {ROOT_PITCH_CLASSES.map((pc) => (
-          <button key={pc} onClick={() => setSelectedRoot(pc)} style={toolbarButtonStyle(selectedRoot === pc)}>
+          <Chip key={pc} active={selectedRoot === pc} onClick={() => setSelectedRoot(pc)}>
             {noteName(60 + pc, noteNaming).replace(/\d+$/, '')}
-          </button>
+          </Chip>
         ))}
       </div>
 
-      {GROUPS.map((group) => (
-        <div key={group} style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
-          <span style={{ fontSize: 11, color: 'var(--line)', flexShrink: 0, alignSelf: 'center', minWidth: 48 }}>
-            {GROUP_LABELS[group]}
-          </span>
-          {CHORD_TYPES.filter((t) => t.group === group).map((t) => (
-            <button key={t.id} onClick={() => setSelectedType(t.id)} style={toolbarButtonStyle(selectedType === t.id)}>
-              {t.symbol || 'maj'}
-            </button>
-          ))}
-        </div>
-      ))}
+      {/* Type selection collapsed to a group switch + one chip row (POLISH.md R2-7) — the
+          previous 4 stacked rows pushed the diagram/play controls off the initial screen. */}
+      <SegmentedControl options={GROUP_OPTIONS} value={activeGroup} onChange={setActiveGroup} aria-label="コードタイプのグループ" />
+      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
+        {CHORD_TYPES.filter((t) => t.group === activeGroup).map((t) => (
+          <Chip key={t.id} active={selectedType === t.id} onClick={() => setSelectedType(t.id)}>
+            {t.symbol || 'maj'}
+          </Chip>
+        ))}
+      </div>
 
       <div style={{ textAlign: 'center' }}>
-        <div className="tabular-nums" style={{ fontSize: 40, color: 'var(--accent)', fontFamily: 'var(--font-display)' }}>
+        <div className="tabular-nums" style={{ fontSize: 40, color: 'var(--accent)' }}>
           {chordName}
         </div>
       </div>
@@ -190,65 +164,58 @@ export function ChordLibraryView() {
         <>
           <ChordDiagram voicing={voicing} root={selectedRoot} typeId={selectedType} noteNaming={noteNaming} leftHanded={leftHanded} />
 
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
             {voicings.map((_, i) => (
               <button
                 key={i}
                 onClick={() => setSelectedVoicingIndex(i)}
                 aria-label={`ボイシング${i + 1}`}
                 style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: '50%',
-                  border: 'none',
-                  background: i === voicingIndex ? 'var(--accent)' : 'var(--line)',
+                  width: 44,
+                  height: 44,
                   padding: 0,
+                  border: 'none',
+                  background: 'transparent',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
-              />
+              >
+                <span
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: '50%',
+                    background: i === voicingIndex ? 'var(--accent)' : 'var(--line)',
+                  }}
+                />
+              </button>
             ))}
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>
-            <button
-              onClick={() => setSelectedVoicingIndex(Math.max(0, voicingIndex - 1))}
-              disabled={voicingIndex === 0}
-              style={toolbarButtonStyle(false)}
-            >
+            <Button onClick={() => setSelectedVoicingIndex(Math.max(0, voicingIndex - 1))} disabled={voicingIndex === 0}>
               ← 前
-            </button>
-            <button
-              onClick={() => setSelectedVoicingIndex(Math.min(voicings.length - 1, voicingIndex + 1))}
-              disabled={voicingIndex === voicings.length - 1}
-              style={toolbarButtonStyle(false)}
-            >
+            </Button>
+            <Button onClick={() => setSelectedVoicingIndex(Math.min(voicings.length - 1, voicingIndex + 1))} disabled={voicingIndex === voicings.length - 1}>
               次 →
-            </button>
+            </Button>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
-            <button
-              onPointerDown={handlePlayPointerDown}
-              onPointerUp={handlePlayPointerUp}
-              onPointerLeave={clearLongPressTimer}
-              onPointerCancel={clearLongPressTimer}
-              style={{ ...playButtonStyle, touchAction: 'none' }}
-            >
-              ストラム(長押しでアルペジオ)
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>
+            <button onClick={() => strum(voicing)} className="btn btn-primary" style={playButtonStyle}>
+              ストラム
             </button>
-            <button
-              onClick={() => toggleFavorite(selectedRoot, selectedType, voicingIndex)}
-              aria-label="お気に入り切り替え"
-              style={{
-                ...toolbarButtonStyle(isFavoriteChord(favorites, selectedRoot, selectedType, voicingIndex)),
-                minWidth: 44,
-              }}
-            >
+            <button onClick={() => arpeggio(voicing)} className="btn btn-primary" style={playButtonStyle}>
+              アルペジオ
+            </button>
+            <Button onClick={() => toggleFavorite(selectedRoot, selectedType, voicingIndex)} aria-label="お気に入り切り替え" variant={isFavoriteChord(favorites, selectedRoot, selectedType, voicingIndex) ? 'primary' : 'secondary'}>
               ★
-            </button>
+            </Button>
           </div>
 
-          <button onClick={goToFretboard} style={{ ...toolbarButtonStyle(false), alignSelf: 'center' }}>
+          <Button onClick={goToFretboard} style={{ alignSelf: 'center' }}>
             指板で見る
-          </button>
+          </Button>
         </>
       ) : (
         <p style={{ color: 'var(--line)', textAlign: 'center' }}>このコードのボイシングが見つかりませんでした。</p>
@@ -257,28 +224,13 @@ export function ChordLibraryView() {
   );
 }
 
-function toolbarButtonStyle(active: boolean) {
-  return {
-    minHeight: 40,
-    padding: '0 14px',
-    borderRadius: 8,
-    border: `1px solid ${active ? 'var(--accent)' : 'var(--line)'}`,
-    background: active ? 'var(--accent)' : 'var(--surface)',
-    color: active ? 'var(--bg)' : 'var(--string)',
-    fontSize: 13,
-    flexShrink: 0,
-  };
-}
-
 const playButtonStyle = {
   minHeight: 48,
-  padding: '0 20px',
+  padding: '0 18px',
   borderRadius: 24,
-  border: 'none',
-  background: 'var(--accent)',
-  color: 'var(--bg)',
   fontSize: 14,
   fontFamily: 'var(--font-display)',
+  fontWeight: 700,
 };
 
 const searchInputStyle = {

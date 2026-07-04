@@ -1,5 +1,8 @@
+import { useState } from 'react';
 import type { Progression } from '../../data/progressionTypes';
 import { isPresetProgressionId } from '../../data/presetProgressions';
+import { Button } from '../../components/ui/Button';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 
 interface ProgressionListViewProps {
   presets: Progression[];
@@ -22,7 +25,7 @@ export function ProgressionListView({
 }: ProgressionListViewProps) {
   return (
     <div style={{ padding: '12px 16px 32px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <button onClick={onCreate} style={primaryButtonStyle}>
+      <button onClick={onCreate} className="btn btn-primary" style={primaryButtonStyle}>
         + 新しい進行を作成
       </button>
 
@@ -30,13 +33,7 @@ export function ProgressionListView({
         <h3 style={sectionTitleStyle}>プリセット</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {presets.map((p) => (
-            <ProgressionRow
-              key={p.id}
-              progression={p}
-              onPlay={() => onOpenPlayer(p.id)}
-              onEdit={() => onDuplicate(p)}
-              editLabel="複製して編集"
-            />
+            <ProgressionRow key={p.id} progression={p} onPlay={() => onOpenPlayer(p.id)} onEdit={() => onDuplicate(p)} editLabel="複製して編集" />
           ))}
         </div>
       </section>
@@ -78,31 +75,42 @@ function ProgressionRow({
   onDelete?: () => void;
 }) {
   const isPreset = isPresetProgressionId(progression.id);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+
   return (
     <div style={rowStyle}>
-      <button onClick={onPlay} style={{ ...rowButtonStyle, flex: 1, textAlign: 'left' }}>
+      <button onClick={onPlay} className="tap-row" style={{ ...rowButtonStyle, flex: 1, textAlign: 'left' }}>
         <div style={{ fontSize: 15, color: 'var(--string)' }}>{progression.name}</div>
         <div style={{ fontSize: 11, color: 'var(--line)' }}>
           {progression.bars.length}小節 / {progression.bpm}BPM / {progression.timeSig.beats}/{progression.timeSig.unit}
         </div>
       </button>
-      <button onClick={onEdit} style={smallButtonStyle}>
+      <Button size="small" onClick={onEdit}>
         {editLabel}
-      </button>
+      </Button>
       {!isPreset && onDuplicate && (
-        <button onClick={onDuplicate} style={smallButtonStyle}>
+        <Button size="small" onClick={onDuplicate}>
           複製
-        </button>
+        </Button>
       )}
       {!isPreset && onDelete && (
-        <button
-          onClick={() => {
-            if (window.confirm(`「${progression.name}」を削除しますか？`)) onDelete();
-          }}
-          style={{ ...smallButtonStyle, color: 'var(--warn)' }}
-        >
-          削除
-        </button>
+        <>
+          <Button size="small" variant="danger" onClick={() => setConfirmingDelete(true)}>
+            削除
+          </Button>
+          <ConfirmDialog
+            open={confirmingDelete}
+            title="進行を削除"
+            message={`「${progression.name}」を削除しますか？`}
+            confirmLabel="削除"
+            danger
+            onConfirm={() => {
+              setConfirmingDelete(false);
+              onDelete();
+            }}
+            onCancel={() => setConfirmingDelete(false)}
+          />
+        </>
       )}
     </div>
   );
@@ -110,12 +118,9 @@ function ProgressionRow({
 
 const primaryButtonStyle = {
   minHeight: 48,
-  borderRadius: 8,
-  border: 'none',
-  background: 'var(--accent)',
-  color: 'var(--bg)',
   fontSize: 15,
   fontFamily: 'var(--font-display)',
+  fontWeight: 700,
 };
 
 const sectionTitleStyle = { fontSize: 13, color: 'var(--line)', margin: '0 0 8px' };
@@ -136,15 +141,4 @@ const rowButtonStyle = {
   background: 'transparent',
   color: 'var(--string)',
   padding: '4px 8px',
-};
-
-const smallButtonStyle = {
-  minHeight: 44,
-  padding: '0 10px',
-  borderRadius: 6,
-  border: '1px solid var(--line)',
-  background: 'var(--bg)',
-  color: 'var(--string)',
-  fontSize: 12,
-  flexShrink: 0,
 };

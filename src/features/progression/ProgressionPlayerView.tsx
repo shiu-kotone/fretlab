@@ -6,6 +6,9 @@ import { ChordDiagram } from '../chords/ChordDiagram';
 import { STRUM_PATTERNS, findStrumPattern } from '../../data/strumPatterns';
 import { chordIdLabel } from './chordLabel';
 import type { ChordTypeId } from '../../theory/chords';
+import { Button } from '../../components/ui/Button';
+import { Chip } from '../../components/ui/Chip';
+import { Toggle } from '../../components/ui/Toggle';
 
 interface ProgressionPlayerViewProps {
   progression: Progression;
@@ -30,13 +33,13 @@ export function ProgressionPlayerView({ progression, onEdit, onBack }: Progressi
   return (
     <div style={{ padding: '12px 16px 32px', display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button onClick={onBack} style={smallButtonStyle}>
+        <Button size="small" onClick={onBack}>
           ← 一覧
-        </button>
+        </Button>
         <span style={{ fontSize: 15, color: 'var(--string)' }}>{activeProgression.name}</span>
-        <button onClick={onEdit} style={smallButtonStyle}>
+        <Button size="small" onClick={onEdit}>
           編集
-        </button>
+        </Button>
       </div>
 
       <div style={{ display: 'flex', gap: 4, overflowX: 'auto', paddingBottom: 4 }}>
@@ -76,26 +79,26 @@ export function ProgressionPlayerView({ progression, onEdit, onBack }: Progressi
         )}
       </div>
 
-      <button onClick={engine.toggle} style={playButtonStyle}>
+      <button onClick={engine.toggle} className="btn btn-primary" style={playButtonStyle}>
         {engine.isPlaying ? '停止' : '再生(カウントイン1小節)'}
       </button>
 
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         <span style={{ fontSize: 12, color: 'var(--line)' }}>BPM</span>
-        <button onClick={() => engine.setBpm(engine.bpm - 1)} style={smallButtonStyle}>
+        <Button size="small" onClick={() => engine.setBpm(engine.bpm - 1)}>
           −
-        </button>
+        </Button>
         <span className="tabular-nums" style={{ fontSize: 18, color: 'var(--accent)', minWidth: 36, textAlign: 'center' }}>
           {engine.bpm}
         </span>
-        <button onClick={() => engine.setBpm(engine.bpm + 1)} style={smallButtonStyle}>
+        <Button size="small" onClick={() => engine.setBpm(engine.bpm + 1)}>
           +
-        </button>
+        </Button>
       </div>
 
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 13, color: 'var(--string)' }}>
-          <input type="checkbox" checked={engine.clickEnabled} onChange={(e) => engine.setClickEnabled(e.target.checked)} />
+        <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 13, color: 'var(--string)', minHeight: 44 }}>
+          <Toggle checked={engine.clickEnabled} onChange={(e) => engine.setClickEnabled(e.target.checked)} aria-label="クリック併走" />
           クリック併走
         </label>
         <input
@@ -104,6 +107,7 @@ export function ProgressionPlayerView({ progression, onEdit, onBack }: Progressi
           max={100}
           value={clickVolume}
           onChange={(e) => setClickVolume(Number(e.target.value))}
+          className="slider"
           style={{ flex: 1 }}
           aria-label="クリック音量"
         />
@@ -115,23 +119,19 @@ export function ProgressionPlayerView({ progression, onEdit, onBack }: Progressi
         </div>
         <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
           {STRUM_PATTERNS.map((sp) => (
-            <button
-              key={sp.id}
-              onClick={() => setActiveProgression((p) => ({ ...p, strumPatternId: sp.id }))}
-              style={chipStyle(activeProgression.strumPatternId === sp.id)}
-            >
+            <Chip key={sp.id} active={activeProgression.strumPatternId === sp.id} onClick={() => setActiveProgression((p) => ({ ...p, strumPatternId: sp.id }))}>
               {sp.label}
-            </button>
+            </Chip>
           ))}
         </div>
       </div>
 
-      <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 13, color: 'var(--string)' }}>
-        <input
-          type="checkbox"
+      <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 13, color: 'var(--string)', minHeight: 44 }}>
+        <Toggle
           checked={activeProgression.loop}
           disabled={engine.isPlaying}
           onChange={(e) => setActiveProgression((p) => ({ ...p, loop: e.target.checked }))}
+          aria-label="ループ再生"
         />
         ループ再生
       </label>
@@ -139,36 +139,13 @@ export function ProgressionPlayerView({ progression, onEdit, onBack }: Progressi
   );
 }
 
-const smallButtonStyle = {
-  minHeight: 40,
-  padding: '0 12px',
-  borderRadius: 6,
-  border: '1px solid var(--line)',
-  background: 'var(--surface)',
-  color: 'var(--string)',
-  fontSize: 12,
-};
-
 const playButtonStyle = {
   minHeight: 52,
   borderRadius: 26,
-  border: 'none',
-  background: 'var(--accent)',
-  color: 'var(--bg)',
   fontSize: 16,
   fontFamily: 'var(--font-display)',
+  fontWeight: 700,
 };
-
-const chipStyle = (active: boolean) => ({
-  minHeight: 36,
-  padding: '0 10px',
-  borderRadius: 8,
-  border: `1px solid ${active ? 'var(--accent)' : 'var(--line)'}`,
-  background: active ? 'var(--accent)' : 'var(--surface)',
-  color: active ? 'var(--bg)' : 'var(--string)',
-  fontSize: 12,
-  flexShrink: 0,
-});
 
 const barChipStyle = (active: boolean) => ({
   minHeight: 32,

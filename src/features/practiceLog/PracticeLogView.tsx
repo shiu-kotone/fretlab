@@ -6,6 +6,7 @@ import { WeeklyBarChart } from './WeeklyBarChart';
 import { HeatmapCalendar } from './HeatmapCalendar';
 import { FeatureBreakdown } from './FeatureBreakdown';
 import { ManualEntryForm } from './ManualEntryForm';
+import { Button } from '../../components/ui/Button';
 
 const WEEK_DAYS = 7;
 const HEATMAP_DAYS = 84; // 12 weeks
@@ -61,15 +62,15 @@ export function PracticeLogView() {
 
       <section style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <h3 style={{ ...headingStyle, margin: 0 }}>目標: 1日</h3>
-        <button onClick={() => setDailyGoalMinutes(dailyGoalMinutes - 5)} style={stepperButtonStyle}>
+        <Button size="small" onClick={() => setDailyGoalMinutes(dailyGoalMinutes - 5)}>
           −
-        </button>
+        </Button>
         <span className="tabular-nums" style={{ minWidth: 32, textAlign: 'center', color: 'var(--string)' }}>
           {dailyGoalMinutes}
         </span>
-        <button onClick={() => setDailyGoalMinutes(dailyGoalMinutes + 5)} style={stepperButtonStyle}>
+        <Button size="small" onClick={() => setDailyGoalMinutes(dailyGoalMinutes + 5)}>
           +
-        </button>
+        </Button>
         <span style={{ fontSize: 13, color: 'var(--string)' }}>分</span>
       </section>
 
@@ -84,9 +85,9 @@ export function PracticeLogView() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 style={{ ...headingStyle, margin: 0 }}>手動記録</h3>
           {!showForm && (
-            <button onClick={() => setShowForm(true)} style={stepperButtonStyle}>
+            <Button size="small" onClick={() => setShowForm(true)}>
               + 追加
-            </button>
+            </Button>
           )}
         </div>
 
@@ -111,9 +112,9 @@ export function PracticeLogView() {
                   {entry.date} ・ {entry.minutes}分{entry.tags.length > 0 ? ` ・ ${entry.tags.join(', ')}` : ''}
                 </div>
               </div>
-              <button onClick={() => void removeManualEntry(entry.id!)} style={{ ...stepperButtonStyle, color: 'var(--warn)' }}>
+              <Button size="small" variant="danger" onClick={() => void removeManualEntry(entry.id!)}>
                 削除
-              </button>
+              </Button>
             </div>
           ))}
         </div>
@@ -132,15 +133,4 @@ const rowStyle = {
   borderRadius: 8,
   padding: '8px 12px',
   border: '1px solid var(--line)',
-};
-
-const stepperButtonStyle = {
-  minHeight: 36,
-  minWidth: 36,
-  padding: '0 10px',
-  borderRadius: 6,
-  border: '1px solid var(--line)',
-  background: 'var(--surface)',
-  color: 'var(--string)',
-  fontSize: 12,
 };

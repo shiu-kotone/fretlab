@@ -2,6 +2,7 @@ import { useFretboardStore } from '../../stores/fretboardStore';
 import { DEGREE_LABELS, DEGREE_PRESETS, degreeColor } from '../../theory/degrees';
 import { noteName } from '../../theory/pitch';
 import { useSettingsStore } from '../../stores/settingsStore';
+import { Chip } from '../../components/ui/Chip';
 
 export function DegreePanel() {
   const degree = useFretboardStore((s) => s.degree);
@@ -20,52 +21,31 @@ export function DegreePanel() {
 
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         {DEGREE_PRESETS.map((preset) => (
-          <button
-            key={preset.id}
-            onClick={() => setDegreesFromPreset(preset.degrees)}
-            disabled={degree.rootMidi === null}
-            style={chipStyle(false)}
-          >
+          <Chip key={preset.id} onClick={() => setDegreesFromPreset(preset.degrees)} disabled={degree.rootMidi === null}>
             {preset.label}
-          </button>
+          </Chip>
         ))}
-        <button onClick={clearDegrees} style={{ ...chipStyle(false), color: 'var(--warn)', borderColor: 'var(--warn)' }}>
+        <Chip onClick={clearDegrees} style={{ color: 'var(--warn)', borderColor: 'var(--warn)' }}>
           クリア
-        </button>
+        </Chip>
       </div>
 
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         {DEGREE_LABELS.map((label, semitone) => {
           const active = degree.degrees.includes(semitone);
           return (
-            <button
+            <Chip
               key={label}
+              active={active}
               onClick={() => toggleDegree(semitone)}
               disabled={degree.rootMidi === null}
-              style={{
-                ...chipStyle(active),
-                background: active ? degreeColor(semitone) : 'var(--surface)',
-                borderColor: active ? degreeColor(semitone) : 'var(--line)',
-                color: active ? 'var(--bg)' : 'var(--string)',
-              }}
+              style={active ? { background: degreeColor(semitone), borderColor: degreeColor(semitone) } : undefined}
             >
               {label}
-            </button>
+            </Chip>
           );
         })}
       </div>
     </section>
   );
-}
-
-function chipStyle(active: boolean) {
-  return {
-    minHeight: 36,
-    padding: '0 12px',
-    borderRadius: 8,
-    border: `1px solid ${active ? 'var(--accent)' : 'var(--line)'}`,
-    background: active ? 'var(--accent)' : 'var(--surface)',
-    color: active ? 'var(--bg)' : 'var(--string)',
-    fontSize: 13,
-  };
 }

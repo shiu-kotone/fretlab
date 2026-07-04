@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { SettingsPanel } from './SettingsPanel';
 import { RecorderView } from '../recorder/RecorderView';
 import { PracticeLogView } from '../practiceLog/PracticeLogView';
+import { SegmentedControl } from '../../components/ui/SegmentedControl';
 
 type LabSegment = 'recorder' | 'log' | 'settings';
 
@@ -34,16 +35,8 @@ export function LabView() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ display: 'flex', gap: 0, padding: '8px 16px 0' }}>
-        {SEGMENTS.map((s, i) => (
-          <SegmentButton
-            key={s.id}
-            label={s.label}
-            active={segment === s.id}
-            onClick={() => setSegment(s.id)}
-            side={i === 0 ? 'left' : i === SEGMENTS.length - 1 ? 'right' : 'middle'}
-          />
-        ))}
+      <div style={{ padding: '8px 16px 0' }}>
+        <SegmentedControl options={SEGMENTS} value={segment} onChange={setSegment} aria-label="ラボ表示切替" />
       </div>
       <div style={{ flex: 1, overflow: 'auto' }}>
         {segment === 'recorder' && <RecorderView />}
@@ -55,35 +48,5 @@ export function LabView() {
         )}
       </div>
     </div>
-  );
-}
-
-function SegmentButton({
-  label,
-  active,
-  onClick,
-  side,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-  side: 'left' | 'middle' | 'right';
-}) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        flex: 1,
-        minHeight: 40,
-        border: '1px solid var(--line)',
-        borderRadius: side === 'left' ? '8px 0 0 8px' : side === 'right' ? '0 8px 8px 0' : 0,
-        borderRight: side === 'right' ? undefined : 'none',
-        background: active ? 'var(--accent)' : 'var(--surface)',
-        color: active ? 'var(--bg)' : 'var(--string)',
-        fontSize: 14,
-      }}
-    >
-      {label}
-    </button>
   );
 }

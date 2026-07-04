@@ -7,6 +7,7 @@ import { TimeSignatureControl } from './TimeSignatureControl';
 import { SubdivisionControl } from './SubdivisionControl';
 import { ToneSelector } from './ToneSelector';
 import { TrainerSettings } from './TrainerSettings';
+import { Toggle } from '../../components/ui/Toggle';
 
 export function MetronomeView() {
   const { isPlaying, flash, toggle } = useMetronomeEngine();
@@ -43,15 +44,15 @@ export function MetronomeView() {
       <div style={{ padding: '16px', display: 'flex', justifyContent: 'center' }}>
         <button
           onClick={toggle}
+          className={`btn ${isPlaying ? '' : 'btn-primary'}`}
           style={{
             minWidth: 120,
             minHeight: 56,
             borderRadius: 28,
-            border: 'none',
-            background: isPlaying ? 'var(--warn)' : 'var(--accent)',
-            color: 'var(--bg)',
             fontSize: 18,
             fontFamily: 'var(--font-display)',
+            fontWeight: 700,
+            ...(isPlaying ? { background: 'var(--warn)', borderColor: 'var(--warn)', color: 'var(--bg)' } : {}),
           }}
         >
           {isPlaying ? '停止' : '再生'}
@@ -59,21 +60,13 @@ export function MetronomeView() {
       </div>
 
       <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minHeight: 44 }}>
           <span>全画面フラッシュ(視覚メトロノーム)</span>
-          <input
-            type="checkbox"
-            checked={fullScreenFlash}
-            onChange={(e) => setFullScreenFlash(e.target.checked)}
-          />
+          <Toggle checked={fullScreenFlash} onChange={(e) => setFullScreenFlash(e.target.checked)} aria-label="全画面フラッシュ" />
         </label>
-        <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minHeight: 44 }}>
           <span>画面を消灯しない(再生中)</span>
-          <input
-            type="checkbox"
-            checked={wakeLockEnabled}
-            onChange={(e) => setWakeLockEnabled(e.target.checked)}
-          />
+          <Toggle checked={wakeLockEnabled} onChange={(e) => setWakeLockEnabled(e.target.checked)} aria-label="画面を消灯しない" />
         </label>
       </div>
 

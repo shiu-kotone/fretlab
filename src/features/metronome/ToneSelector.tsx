@@ -1,6 +1,7 @@
 import { useMetronomeStore } from '../../stores/metronomeStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { TONE_IDS, type ToneId } from '../../audio/click';
+import { Chip } from '../../components/ui/Chip';
 
 const TONE_LABELS: Record<ToneId, string> = {
   woodblock: 'ウッドブロック',
@@ -20,39 +21,16 @@ export function ToneSelector() {
     <section style={{ padding: '8px 16px' }}>
       <h3 style={{ fontSize: 13, color: 'var(--string)', margin: '0 0 8px' }}>音色</h3>
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
-        {TONE_IDS.map((id) => {
-          const active = tone === id;
-          return (
-            <button
-              key={id}
-              onClick={() => setTone(id)}
-              style={{
-                minHeight: 44,
-                padding: '0 14px',
-                borderRadius: 8,
-                border: `1px solid ${active ? 'var(--accent)' : 'var(--line)'}`,
-                background: active ? 'var(--accent)' : 'var(--surface)',
-                color: active ? 'var(--bg)' : 'var(--string)',
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-              }}
-            >
-              {TONE_LABELS[id]}
-            </button>
-          );
-        })}
+        {TONE_IDS.map((id) => (
+          <Chip key={id} active={tone === id} onClick={() => setTone(id)}>
+            {TONE_LABELS[id]}
+          </Chip>
+        ))}
       </div>
 
       <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
         <span style={{ fontSize: 13, minWidth: 80 }}>クリック音量</span>
-        <input
-          type="range"
-          min={0}
-          max={100}
-          value={clickVolume}
-          onChange={(e) => setClickVolume(Number(e.target.value))}
-          style={{ flex: 1 }}
-        />
+        <input type="range" min={0} max={100} value={clickVolume} onChange={(e) => setClickVolume(Number(e.target.value))} className="slider" />
         <span className="tabular-nums" style={{ minWidth: 32, textAlign: 'right' }}>
           {clickVolume}%
         </span>

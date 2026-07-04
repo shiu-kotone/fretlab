@@ -12,6 +12,7 @@ import { scaleTones } from '../../theory/scales';
 import { degreeColor, degreeLabel } from '../../theory/degrees';
 import { computePositionBoxes, isFretInBox } from '../../theory/positionBoxes';
 import { useActivityTimeTracker } from '../practiceLog/useActivityTimeTracker';
+import { Chip } from '../../components/ui/Chip';
 
 const ZOOM_OPTIONS: ZoomFrets[] = [12, 15, 22];
 const LABEL_MODE_OPTIONS: { id: LabelMode; label: string }[] = [
@@ -118,24 +119,15 @@ export function FretboardView() {
       }}
     >
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <button
-          onClick={() => setOverlayMode(overlayMode === 'degree' ? 'off' : 'degree')}
-          style={toolbarButtonStyle(overlayMode === 'degree', isLandscape)}
-        >
+        <Chip active={overlayMode === 'degree'} style={compactChipStyle(isLandscape)} onClick={() => setOverlayMode(overlayMode === 'degree' ? 'off' : 'degree')}>
           度数
-        </button>
-        <button
-          onClick={() => setOverlayMode(overlayMode === 'scale' ? 'off' : 'scale')}
-          style={toolbarButtonStyle(overlayMode === 'scale', isLandscape)}
-        >
+        </Chip>
+        <Chip active={overlayMode === 'scale'} style={compactChipStyle(isLandscape)} onClick={() => setOverlayMode(overlayMode === 'scale' ? 'off' : 'scale')}>
           スケール
-        </button>
-        <button
-          onClick={() => setStringOrientation(orientation === '1-top' ? '6-top' : '1-top')}
-          style={toolbarButtonStyle(false, isLandscape)}
-        >
+        </Chip>
+        <Chip style={compactChipStyle(isLandscape)} onClick={() => setStringOrientation(orientation === '1-top' ? '6-top' : '1-top')}>
           {orientation === '1-top' ? '1弦が上' : '6弦が上'}
-        </button>
+        </Chip>
       </div>
 
       {/* SPEC §3.2 "横向きは指板タブのみ最適化(全フレット表示)": the fretboard
@@ -175,18 +167,18 @@ export function FretboardView() {
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
         <span style={{ fontSize: 12, color: 'var(--line)' }}>表示フレット</span>
         {ZOOM_OPTIONS.map((z) => (
-          <button key={z} onClick={() => setZoomFrets(z)} style={toolbarButtonStyle(zoomFrets === z, isLandscape)}>
+          <Chip key={z} active={zoomFrets === z} style={compactChipStyle(isLandscape)} onClick={() => setZoomFrets(z)}>
             {z}F
-          </button>
+          </Chip>
         ))}
       </div>
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
         <span style={{ fontSize: 12, color: 'var(--line)' }}>音名ラベル</span>
         {LABEL_MODE_OPTIONS.map((opt) => (
-          <button key={opt.id} onClick={() => setLabelMode(opt.id)} style={toolbarButtonStyle(labelMode === opt.id, isLandscape)}>
+          <Chip key={opt.id} active={labelMode === opt.id} style={compactChipStyle(isLandscape)} onClick={() => setLabelMode(opt.id)}>
             {opt.label}
-          </button>
+          </Chip>
         ))}
       </div>
 
@@ -196,14 +188,12 @@ export function FretboardView() {
   );
 }
 
-function toolbarButtonStyle(active: boolean, compact = false) {
-  return {
-    minHeight: compact ? 32 : 40,
-    padding: compact ? '0 10px' : '0 14px',
-    borderRadius: 8,
-    border: `1px solid ${active ? 'var(--accent)' : 'var(--line)'}`,
-    background: active ? 'var(--accent)' : 'var(--surface)',
-    color: active ? 'var(--bg)' : 'var(--string)',
-    fontSize: compact ? 12 : 13,
-  };
+/**
+ * Landscape drops to a 32pt-tall compact chip (below the 44pt touch-target
+ * guideline) — a deliberate trade for vertical space in the one orientation
+ * SPEC §3.2 calls out for "全フレット表示" (maximize the fretboard itself);
+ * portrait stays at the standard 44pt.
+ */
+function compactChipStyle(compact: boolean) {
+  return compact ? { minHeight: 32, padding: '0 10px', fontSize: 12 } : undefined;
 }

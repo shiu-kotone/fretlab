@@ -6,6 +6,7 @@ import { useMetronomeStore } from '../../stores/metronomeStore';
 import { formatDuration, formatFileSize } from '../../audio/recorder';
 import { LevelMeter } from './LevelMeter';
 import { RecordingList } from './RecordingList';
+import { Button } from '../../components/ui/Button';
 
 interface StorageInfo {
   usage: number;
@@ -61,14 +62,18 @@ export function RecorderView() {
             <LevelMeter level={engine.level} />
           </>
         )}
-        <button onClick={() => (engine.isRecording ? engine.stop() : void engine.start())} style={recordButtonStyle(engine.isRecording)}>
+        <button
+          onClick={() => (engine.isRecording ? engine.stop() : void engine.start())}
+          className={`btn ${engine.isRecording ? '' : 'btn-primary'}`}
+          style={{ ...recordButtonStyle, ...(engine.isRecording ? { background: 'var(--warn)', borderColor: 'var(--warn)', color: 'var(--bg)' } : {}) }}
+        >
           {engine.isRecording ? '■ 停止' : '● 録音開始'}
         </button>
 
         {metronomeToggle && (
-          <button onClick={metronomeToggle} style={smallButtonStyle}>
+          <Button size="small" onClick={metronomeToggle}>
             {metronomeIsPlaying ? 'メトロノームを停止' : 'メトロノームを併走(クリック音がマイクに混入します)'}
-          </button>
+          </Button>
         )}
       </div>
 
@@ -93,25 +98,11 @@ export function RecorderView() {
   );
 }
 
-function recordButtonStyle(recording: boolean) {
-  return {
-    minWidth: 160,
-    minHeight: 52,
-    borderRadius: 26,
-    border: 'none',
-    background: recording ? 'var(--warn)' : 'var(--accent)',
-    color: 'var(--bg)',
-    fontSize: 16,
-    fontFamily: 'var(--font-display)',
-  };
-}
-
-const smallButtonStyle = {
-  minHeight: 40,
-  padding: '0 12px',
-  borderRadius: 8,
-  border: '1px solid var(--line)',
-  background: 'var(--surface)',
-  color: 'var(--string)',
-  fontSize: 12,
+const recordButtonStyle = {
+  minWidth: 160,
+  minHeight: 52,
+  borderRadius: 26,
+  fontSize: 16,
+  fontFamily: 'var(--font-display)',
+  fontWeight: 700,
 };

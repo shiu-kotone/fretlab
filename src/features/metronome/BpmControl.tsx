@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useMetronomeStore } from '../../stores/metronomeStore';
 import { initialTapTempoState, registerTap, type TapTempoState } from '../../audio/tapTempo';
 
@@ -60,11 +60,12 @@ export function BpmControl() {
         value={bpm}
         onChange={(e) => setBpm(Number(e.target.value))}
         aria-label="BPMスライダー"
-        style={{ width: '100%' }}
+        className="slider"
       />
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'center' }}>
         <button
+          className="btn"
           aria-label="BPMを下げる"
           onPointerDown={() => startHold(-1)}
           onPointerUp={clearHold}
@@ -77,17 +78,13 @@ export function BpmControl() {
         <button
           onClick={handleTap}
           aria-label="タップテンポ"
-          style={{
-            ...roundButtonStyle,
-            width: 88,
-            borderRadius: 22,
-            background: tapFlash ? 'var(--accent)' : 'var(--surface)',
-            color: tapFlash ? 'var(--bg)' : 'var(--string)',
-          }}
+          className={`btn ${tapFlash ? 'btn-primary' : ''}`}
+          style={{ ...roundButtonStyle, width: 88, borderRadius: 22 }}
         >
           TAP
         </button>
         <button
+          className="btn"
           aria-label="BPMを上げる"
           onPointerDown={() => startHold(1)}
           onPointerUp={clearHold}
@@ -102,12 +99,9 @@ export function BpmControl() {
   );
 }
 
-const roundButtonStyle: CSSProperties = {
+const roundButtonStyle = {
   minWidth: 44,
   minHeight: 44,
   borderRadius: 22,
-  border: '1px solid var(--line)',
-  background: 'var(--surface)',
-  color: 'var(--string)',
   fontSize: 20,
 };

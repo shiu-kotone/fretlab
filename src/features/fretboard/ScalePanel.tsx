@@ -2,6 +2,7 @@ import { useFretboardStore, type PositionBoxSelection } from '../../stores/fretb
 import { SCALES } from '../../theory/scales';
 import { noteName } from '../../theory/pitch';
 import { useSettingsStore } from '../../stores/settingsStore';
+import { Chip } from '../../components/ui/Chip';
 
 const ROOT_PITCH_CLASSES = Array.from({ length: 12 }, (_, i) => i);
 const BOX_OPTIONS: PositionBoxSelection[] = ['all', 1, 2, 3, 4, 5];
@@ -21,48 +22,34 @@ export function ScalePanel() {
       <div>
         <h4 style={headingStyle}>ルート</h4>
         <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
-          {ROOT_PITCH_CLASSES.map((pc) => {
-            const active = scale.rootPc === pc;
-            return (
-              <button key={pc} onClick={() => setScaleRoot(pc)} style={chipStyle(active)}>
-                {noteName(60 + pc, noteNaming).replace(/\d+$/, '')}
-              </button>
-            );
-          })}
+          {ROOT_PITCH_CLASSES.map((pc) => (
+            <Chip key={pc} active={scale.rootPc === pc} onClick={() => setScaleRoot(pc)}>
+              {noteName(60 + pc, noteNaming).replace(/\d+$/, '')}
+            </Chip>
+          ))}
         </div>
       </div>
 
       <div>
         <h4 style={headingStyle}>スケール</h4>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 220, overflowY: 'auto' }}>
-          {SCALES.map((s) => {
-            const active = scale.scaleId === s.id;
-            return (
-              <button
-                key={s.id}
-                onClick={() => setScaleType(s.id)}
-                style={{
-                  ...chipStyle(active),
-                  textAlign: 'left',
-                  justifyContent: 'flex-start',
-                }}
-              >
-                {s.name}
-              </button>
-            );
-          })}
+          {SCALES.map((s) => (
+            <Chip key={s.id} active={scale.scaleId === s.id} onClick={() => setScaleType(s.id)} style={{ textAlign: 'left', justifyContent: 'flex-start' }}>
+              {s.name}
+            </Chip>
+          ))}
         </div>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h4 style={{ ...headingStyle, margin: 0 }}>ラベル</h4>
         <div style={{ display: 'flex', gap: 6 }}>
-          <button onClick={() => setScaleLabelMode('degree')} style={chipStyle(scaleLabelMode === 'degree')}>
+          <Chip active={scaleLabelMode === 'degree'} onClick={() => setScaleLabelMode('degree')}>
             度数
-          </button>
-          <button onClick={() => setScaleLabelMode('note')} style={chipStyle(scaleLabelMode === 'note')}>
+          </Chip>
+          <Chip active={scaleLabelMode === 'note'} onClick={() => setScaleLabelMode('note')}>
             音名
-          </button>
+          </Chip>
         </div>
       </div>
 
@@ -70,9 +57,9 @@ export function ScalePanel() {
         <h4 style={headingStyle}>ポジション</h4>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {BOX_OPTIONS.map((box) => (
-            <button key={box} onClick={() => setPositionBox(box)} style={chipStyle(positionBox === box)}>
+            <Chip key={box} active={positionBox === box} onClick={() => setPositionBox(box)}>
               {box === 'all' ? '全体' : `ボックス${box}`}
-            </button>
+            </Chip>
           ))}
         </div>
       </div>
@@ -81,18 +68,3 @@ export function ScalePanel() {
 }
 
 const headingStyle = { fontSize: 12, color: 'var(--string)', margin: '0 0 6px' };
-
-function chipStyle(active: boolean) {
-  return {
-    display: 'flex',
-    alignItems: 'center',
-    minHeight: 36,
-    padding: '0 12px',
-    borderRadius: 8,
-    border: `1px solid ${active ? 'var(--accent)' : 'var(--line)'}`,
-    background: active ? 'var(--accent)' : 'var(--surface)',
-    color: active ? 'var(--bg)' : 'var(--string)',
-    fontSize: 13,
-    flexShrink: 0,
-  };
-}

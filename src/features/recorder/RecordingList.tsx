@@ -21,7 +21,7 @@ export function RecordingList({ items, expandedId, onToggle, onRename, onDelete,
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {items.map((r) => (
         <div key={r.id}>
-          <button onClick={() => onToggle(r.id)} style={rowStyle(expandedId === r.id)}>
+          <button onClick={() => onToggle(r.id)} className="tap-row" style={rowStyle(expandedId === r.id)}>
             <div style={{ fontSize: 14, color: 'var(--string)' }}>{r.name}</div>
             <div style={{ fontSize: 11, color: 'var(--line)' }}>
               {new Date(r.createdAt).toLocaleString('ja-JP')} ・ {formatDuration(r.durationSeconds)} ・ {formatFileSize(r.sizeBytes)}

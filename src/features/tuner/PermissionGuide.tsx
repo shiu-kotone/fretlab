@@ -1,3 +1,5 @@
+import { Button } from '../../components/ui/Button';
+
 interface Props {
   onRetry: () => void;
 }
@@ -16,20 +18,9 @@ export function PermissionGuide({ onRetry }: Props) {
           <li>このページに戻って下のボタンをもう一度押す</li>
         </ol>
       </div>
-      <button
-        onClick={onRetry}
-        style={{
-          alignSelf: 'flex-start',
-          minHeight: 44,
-          padding: '0 16px',
-          borderRadius: 8,
-          border: '1px solid var(--accent)',
-          background: 'var(--surface)',
-          color: 'var(--accent)',
-        }}
-      >
+      <Button style={{ alignSelf: 'flex-start', color: 'var(--accent)', borderColor: 'var(--accent)' }} onClick={onRetry}>
         もう一度試す
-      </button>
+      </Button>
       <p style={{ fontSize: 12, color: 'var(--line)', margin: 0 }}>
         マイクなしでも「音出し」モードで耳を頼りにチューニングできます。
       </p>

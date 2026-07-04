@@ -1,4 +1,6 @@
 import { useMetronomeStore, type TimeSignature, type TimeSigUnit } from '../../stores/metronomeStore';
+import { Chip } from '../../components/ui/Chip';
+import { Button } from '../../components/ui/Button';
 
 const QUICK_SIGS: TimeSignature[] = [
   { beats: 2, unit: 4 },
@@ -23,38 +25,30 @@ export function TimeSignatureControl() {
       <h3 style={heading}>拍子</h3>
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
         {QUICK_SIGS.map((sig) => (
-          <button
-            key={`${sig.beats}/${sig.unit}`}
-            onClick={() => setTimeSig(sig)}
-            style={chipStyle(isActive(sig))}
-          >
+          <Chip key={`${sig.beats}/${sig.unit}`} active={isActive(sig)} onClick={() => setTimeSig(sig)}>
             {sig.beats}/{sig.unit}
-          </button>
+          </Chip>
         ))}
       </div>
 
       <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginTop: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button style={smallButtonStyle} aria-label="分子を減らす" onClick={() => setTimeSig({ ...timeSig, beats: timeSig.beats - 1 })}>
+          <Button size="small" aria-label="分子を減らす" onClick={() => setTimeSig({ ...timeSig, beats: timeSig.beats - 1 })}>
             −
-          </button>
+          </Button>
           <span className="tabular-nums" style={{ minWidth: 24, textAlign: 'center' }}>
             {timeSig.beats}
           </span>
-          <button style={smallButtonStyle} aria-label="分子を増やす" onClick={() => setTimeSig({ ...timeSig, beats: timeSig.beats + 1 })}>
+          <Button size="small" aria-label="分子を増やす" onClick={() => setTimeSig({ ...timeSig, beats: timeSig.beats + 1 })}>
             +
-          </button>
+          </Button>
         </div>
         <span>/</span>
         <div style={{ display: 'flex', gap: 4 }}>
           {UNITS.map((unit) => (
-            <button
-              key={unit}
-              onClick={() => setTimeSig({ ...timeSig, unit })}
-              style={chipStyle(timeSig.unit === unit)}
-            >
+            <Chip key={unit} active={timeSig.unit === unit} onClick={() => setTimeSig({ ...timeSig, unit })}>
               {unit}
-            </button>
+            </Chip>
           ))}
         </div>
       </div>
@@ -63,25 +57,3 @@ export function TimeSignatureControl() {
 }
 
 const heading = { fontSize: 13, color: 'var(--string)', margin: '0 0 8px' };
-
-function chipStyle(active: boolean) {
-  return {
-    minHeight: 44,
-    padding: '0 14px',
-    borderRadius: 8,
-    border: `1px solid ${active ? 'var(--accent)' : 'var(--line)'}`,
-    background: active ? 'var(--accent)' : 'var(--surface)',
-    color: active ? 'var(--bg)' : 'var(--string)',
-    whiteSpace: 'nowrap' as const,
-    flexShrink: 0,
-  };
-}
-
-const smallButtonStyle = {
-  minWidth: 44,
-  minHeight: 44,
-  borderRadius: 8,
-  border: '1px solid var(--line)',
-  background: 'var(--surface)',
-  color: 'var(--string)',
-};

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { ChordLibraryView } from './ChordLibraryView';
 import { ProgressionFeatureView } from '../progression/ProgressionFeatureView';
+import { SegmentedControl } from '../../components/ui/SegmentedControl';
 
 type ChordSegment = 'library' | 'progression';
 
@@ -15,6 +16,11 @@ const useChordTabStore = create<ChordTabState>((set) => ({
   setSegment: (segment) => set({ segment }),
 }));
 
+const SEGMENTS: { id: ChordSegment; label: string }[] = [
+  { id: 'library', label: 'ライブラリ' },
+  { id: 'progression', label: '進行' },
+];
+
 /** SPEC §3.1: "コード" tab = コードライブラリ + コード進行プレイヤー(上部セグメントで切替). */
 export function ChordTabView() {
   const segment = useChordTabStore((s) => s.segment);
@@ -22,33 +28,10 @@ export function ChordTabView() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ display: 'flex', gap: 0, padding: '8px 16px 0' }}>
-        <SegmentButton label="ライブラリ" active={segment === 'library'} onClick={() => setSegment('library')} side="left" />
-        <SegmentButton label="進行" active={segment === 'progression'} onClick={() => setSegment('progression')} side="right" />
+      <div style={{ padding: '8px 16px 0' }}>
+        <SegmentedControl options={SEGMENTS} value={segment} onChange={setSegment} aria-label="コード表示切替" />
       </div>
-      <div style={{ flex: 1, overflow: 'auto' }}>
-        {segment === 'library' ? <ChordLibraryView /> : <ProgressionFeatureView />}
-      </div>
+      <div style={{ flex: 1, overflow: 'auto' }}>{segment === 'library' ? <ChordLibraryView /> : <ProgressionFeatureView />}</div>
     </div>
-  );
-}
-
-function SegmentButton({ label, active, onClick, side }: { label: string; active: boolean; onClick: () => void; side: 'left' | 'right' }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        flex: 1,
-        minHeight: 40,
-        border: '1px solid var(--line)',
-        borderRadius: side === 'left' ? '8px 0 0 8px' : '0 8px 8px 0',
-        borderRight: side === 'left' ? 'none' : undefined,
-        background: active ? 'var(--accent)' : 'var(--surface)',
-        color: active ? 'var(--bg)' : 'var(--string)',
-        fontSize: 14,
-      }}
-    >
-      {label}
-    </button>
   );
 }

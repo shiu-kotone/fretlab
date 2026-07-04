@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { PRESET_TAGS, todayDateString } from '../../data/practiceLogTypes';
+import { Button } from '../../components/ui/Button';
+import { Chip } from '../../components/ui/Chip';
 
 interface ManualEntryFormProps {
   onAdd: (entry: { date: string; memo: string; minutes: number; tags: string[] }) => void;
@@ -31,27 +33,27 @@ export function ManualEntryForm({ onAdd, onCancel }: ManualEntryFormProps) {
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{ fontSize: 12, color: 'var(--line)' }}>時間(分)</span>
-        <button onClick={() => setMinutes((m) => Math.max(1, m - 5))} style={stepperButtonStyle}>
+        <Button size="small" onClick={() => setMinutes((m) => Math.max(1, m - 5))}>
           −
-        </button>
+        </Button>
         <span className="tabular-nums" style={{ minWidth: 32, textAlign: 'center' }}>
           {minutes}
         </span>
-        <button onClick={() => setMinutes((m) => Math.min(600, m + 5))} style={stepperButtonStyle}>
+        <Button size="small" onClick={() => setMinutes((m) => Math.min(600, m + 5))}>
           +
-        </button>
+        </Button>
       </div>
 
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         {PRESET_TAGS.map((tag) => (
-          <button key={tag} onClick={() => toggleTag(tag)} style={chipStyle(tags.includes(tag))}>
+          <Chip key={tag} active={tags.includes(tag)} onClick={() => toggleTag(tag)}>
             {tag}
-          </button>
+          </Chip>
         ))}
         {customTags.map((tag) => (
-          <button key={tag} onClick={() => toggleTag(tag)} style={chipStyle(true)}>
+          <Chip key={tag} active onClick={() => toggleTag(tag)}>
             {tag} ×
-          </button>
+          </Chip>
         ))}
       </div>
       <div style={{ display: 'flex', gap: 6 }}>
@@ -65,33 +67,21 @@ export function ManualEntryForm({ onAdd, onCancel }: ManualEntryFormProps) {
           }}
           style={{ ...inputStyle, flex: 1 }}
         />
-        <button onClick={addCustomTag} style={stepperButtonStyle}>
+        <Button size="small" onClick={addCustomTag}>
           追加
-        </button>
+        </Button>
       </div>
 
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-        <button onClick={onCancel} style={stepperButtonStyle}>
+        <Button size="small" onClick={onCancel}>
           キャンセル
-        </button>
-        <button onClick={() => onAdd({ date, memo, minutes, tags })} disabled={minutes <= 0} style={primaryButtonStyle}>
+        </Button>
+        <button onClick={() => onAdd({ date, memo, minutes, tags })} disabled={minutes <= 0} className="btn btn-primary btn-small">
           保存
         </button>
       </div>
     </div>
   );
-}
-
-function chipStyle(active: boolean) {
-  return {
-    minHeight: 36,
-    padding: '0 10px',
-    borderRadius: 8,
-    border: `1px solid ${active ? 'var(--accent)' : 'var(--line)'}`,
-    background: active ? 'var(--accent)' : 'var(--bg)',
-    color: active ? 'var(--bg)' : 'var(--string)',
-    fontSize: 12,
-  };
 }
 
 const inputStyle = {
@@ -102,25 +92,4 @@ const inputStyle = {
   background: 'var(--bg)',
   color: 'var(--string)',
   fontSize: 14,
-};
-
-const stepperButtonStyle = {
-  minHeight: 36,
-  minWidth: 36,
-  padding: '0 10px',
-  borderRadius: 6,
-  border: '1px solid var(--line)',
-  background: 'var(--bg)',
-  color: 'var(--string)',
-  fontSize: 12,
-};
-
-const primaryButtonStyle = {
-  minHeight: 40,
-  padding: '0 16px',
-  borderRadius: 8,
-  border: 'none',
-  background: 'var(--accent)',
-  color: 'var(--bg)',
-  fontSize: 13,
 };

@@ -5,6 +5,8 @@ import { resolveTuning } from '../../theory/tuningResolver';
 import { noteName } from '../../theory/pitch';
 import { getGuitarSynth, unlockAudio } from '../../audio/AudioEngine';
 import type { PluckHandle } from '../../audio/karplusStrong';
+import { Toggle } from '../../components/ui/Toggle';
+import { Button } from '../../components/ui/Button';
 
 const REFERENCE_TONE_SECONDS = 3;
 
@@ -62,10 +64,9 @@ export function ReferenceTonePanel() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '8px 0' }}>
-      <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minHeight: 44 }}>
         <span>リピート再生</span>
-        <input
-          type="checkbox"
+        <Toggle
           checked={repeat}
           onChange={(e) => {
             setRepeat(e.target.checked);
@@ -74,6 +75,7 @@ export function ReferenceTonePanel() {
               intervalRef.current = null;
             }
           }}
+          aria-label="リピート再生"
         />
       </label>
 
@@ -104,20 +106,9 @@ export function ReferenceTonePanel() {
       </div>
 
       {activeString !== null && (
-        <button
-          onClick={stop}
-          style={{
-            alignSelf: 'center',
-            minHeight: 40,
-            padding: '0 16px',
-            borderRadius: 8,
-            border: '1px solid var(--line)',
-            background: 'var(--surface)',
-            color: 'var(--string)',
-          }}
-        >
+        <Button style={{ alignSelf: 'center' }} onClick={stop}>
           停止
-        </button>
+        </Button>
       )}
     </div>
   );

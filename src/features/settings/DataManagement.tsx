@@ -4,6 +4,10 @@ import { useCustomTuningsStore } from '../../stores/customTuningsStore';
 import { useProgressionStore } from '../../stores/progressionStore';
 import { usePracticeLogStore } from '../../stores/practiceLogStore';
 import { useRecordingsStore } from '../../stores/recordingsStore';
+import { Button } from '../../components/ui/Button';
+import { ConfirmDialog, DoubleConfirmDialog } from '../../components/ui/ConfirmDialog';
+
+type PendingClear = 'practiceLog' | 'recordings' | null;
 
 /** SPEC §4.7/§5.8 データ: エクスポート/インポート、練習記録・録音の全消去(二重確認). */
 export function DataManagement() {
@@ -15,6 +19,8 @@ export function DataManagement() {
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [pendingImport, setPendingImport] = useState<Parameters<typeof applyImportPayload>[0] | null>(null);
+  const [pendingClear, setPendingClear] = useState<PendingClear>(null);
 
   const handleExport = async () => {
     const payload = await buildExportPayload();
@@ -37,27 +43,18 @@ export function DataManagement() {
         setMessage('インポートに失敗しました: ファイル形式が不正です。');
         return;
       }
-      if (!window.confirm('現在のカスタムチューニング・自作進行・お気に入り・練習記録を、このファイルの内容で置き換えます。よろしいですか？')) {
-        return;
-      }
-      await applyImportPayload(data);
-      await Promise.all([loadCustomTunings(), loadProgressions(), loadPracticeLog()]);
-      setMessage('インポートしました。');
+      setPendingImport(data);
     } catch {
       setMessage('インポートに失敗しました: ファイルを読み込めませんでした。');
     }
   };
 
-  const handleClearPracticeLog = () => {
-    if (!window.confirm('練習記録をすべて削除します。よろしいですか？')) return;
-    if (!window.confirm('本当に削除してよろしいですか？この操作は取り消せません。')) return;
-    void clearPracticeLog().then(() => setMessage('練習記録を削除しました。'));
-  };
-
-  const handleClearRecordings = () => {
-    if (!window.confirm('録音をすべて削除します。よろしいですか？')) return;
-    if (!window.confirm('本当に削除してよろしいですか？この操作は取り消せません。')) return;
-    void clearRecordings().then(() => setMessage('録音を削除しました。'));
+  const confirmImport = async () => {
+    if (!pendingImport) return;
+    await applyImportPayload(pendingImport);
+    await Promise.all([loadCustomTunings(), loadProgressions(), loadPracticeLog()]);
+    setPendingImport(null);
+    setMessage('インポートしました。');
   };
 
   return (
@@ -65,12 +62,8 @@ export function DataManagement() {
       <h3 style={headingStyle}>データ</h3>
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <button onClick={() => void handleExport()} style={buttonStyle}>
-          エクスポート
-        </button>
-        <button onClick={() => fileInputRef.current?.click()} style={buttonStyle}>
-          インポート
-        </button>
+        <Button onClick={() => void handleExport()}>エクスポート</Button>
+        <Button onClick={() => fileInputRef.current?.click()}>インポート</Button>
         <input
           ref={fileInputRef}
           type="file"
@@ -85,27 +78,51 @@ export function DataManagement() {
       </div>
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <button onClick={handleClearPracticeLog} style={{ ...buttonStyle, color: 'var(--warn)' }}>
+        <Button variant="danger" onClick={() => setPendingClear('practiceLog')}>
           練習記録を全消去
-        </button>
-        <button onClick={handleClearRecordings} style={{ ...buttonStyle, color: 'var(--warn)' }}>
+        </Button>
+        <Button variant="danger" onClick={() => setPendingClear('recordings')}>
           録音を全消去
-        </button>
+        </Button>
       </div>
 
       {message && <p style={{ fontSize: 12, color: 'var(--accent)', margin: 0 }}>{message}</p>}
+
+      <ConfirmDialog
+        open={pendingImport !== null}
+        title="インポートの確認"
+        message="現在のカスタムチューニング・自作進行・お気に入り・練習記録を、このファイルの内容で置き換えます。よろしいですか？"
+        danger
+        confirmLabel="置き換える"
+        onConfirm={() => void confirmImport()}
+        onCancel={() => setPendingImport(null)}
+      />
+
+      <DoubleConfirmDialog
+        open={pendingClear === 'practiceLog'}
+        title="練習記録を全消去"
+        firstMessage="練習記録をすべて削除します。よろしいですか？"
+        secondMessage="本当に削除してよろしいですか？この操作は取り消せません。"
+        onConfirm={() => {
+          setPendingClear(null);
+          void clearPracticeLog().then(() => setMessage('練習記録を削除しました。'));
+        }}
+        onCancel={() => setPendingClear(null)}
+      />
+
+      <DoubleConfirmDialog
+        open={pendingClear === 'recordings'}
+        title="録音を全消去"
+        firstMessage="録音をすべて削除します。よろしいですか？"
+        secondMessage="本当に削除してよろしいですか？この操作は取り消せません。"
+        onConfirm={() => {
+          setPendingClear(null);
+          void clearRecordings().then(() => setMessage('録音を削除しました。'));
+        }}
+        onCancel={() => setPendingClear(null)}
+      />
     </section>
   );
 }
 
 const headingStyle = { fontSize: 13, color: 'var(--string)', margin: 0 };
-
-const buttonStyle = {
-  minHeight: 40,
-  padding: '0 14px',
-  borderRadius: 8,
-  border: '1px solid var(--line)',
-  background: 'var(--surface)',
-  color: 'var(--string)',
-  fontSize: 13,
-};
