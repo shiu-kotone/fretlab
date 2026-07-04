@@ -13,6 +13,17 @@ export interface CustomTuningRecord {
 /** User-created progressions (SPEC §5.3): bundled presets are static data, not stored here. */
 export type ProgressionRecord = Progression;
 
+/** SPEC §5.6: recorded audio, stored as a Blob directly (Dexie supports this natively). */
+export interface RecordingRecord {
+  id?: number;
+  name: string;
+  blob: Blob;
+  mimeType: string;
+  durationSeconds: number;
+  sizeBytes: number;
+  createdAt: number;
+}
+
 /**
  * IndexedDB store for user-created data (SPEC §2.2: settings live in
  * localStorage via Zustand persist; custom tunings, recordings, progressions
@@ -21,6 +32,7 @@ export type ProgressionRecord = Progression;
 export class FretLabDB extends Dexie {
   customTunings!: Table<CustomTuningRecord, number>;
   progressions!: Table<ProgressionRecord, string>;
+  recordings!: Table<RecordingRecord, number>;
 
   constructor() {
     super('fretlab');
@@ -30,6 +42,11 @@ export class FretLabDB extends Dexie {
     this.version(2).stores({
       customTunings: '++id, name, createdAt',
       progressions: 'id, name, createdAt, updatedAt',
+    });
+    this.version(3).stores({
+      customTunings: '++id, name, createdAt',
+      progressions: 'id, name, createdAt, updatedAt',
+      recordings: '++id, name, createdAt',
     });
   }
 }

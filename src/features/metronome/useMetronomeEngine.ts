@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMetronomeStore, type SpeedTrainerSettings, type MuteBarsSettings } from '../../stores/metronomeStore';
 import { usePlaybackCoordinatorStore } from '../../stores/playbackCoordinatorStore';
+import { useMetronomeControlStore } from '../../stores/metronomeControlStore';
 import { getAudioContext, getClickGain, setClickVolume, unlockAudio } from '../../audio/AudioEngine';
 import { LookaheadScheduler } from '../../audio/LookaheadScheduler';
 import { synthesizeClick, type ClickLevel } from '../../audio/click';
@@ -146,6 +147,14 @@ export function useMetronomeEngine() {
       void start();
     }
   }, [start, stop]);
+
+  // Publish this instance's toggle so other features (the recorder, SPEC
+  // §5.6 "録音画面からメトロノームを起動可") can control the one always-mounted
+  // engine instead of spawning a second scheduler.
+  useEffect(() => {
+    useMetronomeControlStore.getState().setToggle(toggle);
+    return () => useMetronomeControlStore.getState().setToggle(null);
+  }, [toggle]);
 
   // Release resources if the whole app unmounts (e.g. page navigation), but NOT on
   // tab switches — App.tsx keeps this component mounted so playback survives them
