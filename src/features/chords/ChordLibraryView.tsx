@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, type PointerEvent } from 'react';
 import { ChordDiagram } from './ChordDiagram';
 import { useChordPlayback } from './useChordPlayback';
 import { useChordLibraryStore, isFavoriteChord } from '../../stores/chordLibraryStore';
@@ -64,7 +64,19 @@ export function ChordLibraryView() {
     }
   };
 
-  const handlePlayPointerDown = () => {
+  const clearLongPressTimer = () => {
+    if (longPressTimer.current !== null) {
+      window.clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const handlePlayPointerDown = (e: PointerEvent<HTMLButtonElement>) => {
+    // Pointer capture keeps this element receiving the up/cancel events even
+    // if the finger drifts slightly during the hold — without it, a real
+    // touchscreen tap can be reinterpreted as a scroll gesture inside the
+    // scrollable page and the button never sees a pointerup at all.
+    e.currentTarget.setPointerCapture(e.pointerId);
     longPressFired.current = false;
     longPressTimer.current = window.setTimeout(() => {
       longPressFired.current = true;
@@ -73,10 +85,7 @@ export function ChordLibraryView() {
   };
 
   const handlePlayPointerUp = () => {
-    if (longPressTimer.current !== null) {
-      window.clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
+    clearLongPressTimer();
     if (!longPressFired.current) {
       strum(voicing);
     }
@@ -213,13 +222,9 @@ export function ChordLibraryView() {
             <button
               onPointerDown={handlePlayPointerDown}
               onPointerUp={handlePlayPointerUp}
-              onPointerLeave={() => {
-                if (longPressTimer.current !== null) {
-                  window.clearTimeout(longPressTimer.current);
-                  longPressTimer.current = null;
-                }
-              }}
-              style={playButtonStyle}
+              onPointerLeave={clearLongPressTimer}
+              onPointerCancel={clearLongPressTimer}
+              style={{ ...playButtonStyle, touchAction: 'none' }}
             >
               ストラム(長押しでアルペジオ)
             </button>

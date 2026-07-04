@@ -1,51 +1,100 @@
 import { describe, it, expect } from 'vitest';
-import { stringX, fretRowY, fretToRow, dotY, STRING_MARGIN, DIAGRAM_WIDTH, TOP_LABEL_HEIGHT, FRET_HEIGHT } from './chordDiagramGeometry';
+import {
+  stringRow,
+  stringY,
+  gridTopY,
+  gridBottomY,
+  fretColX,
+  fretToCol,
+  dotX,
+  stringNumberX,
+  stringNumberLabel,
+  markX,
+  labelX,
+  diagramWidth,
+  TOP_MARGIN,
+  STRING_SPACING,
+  LEFT_MARGIN,
+  FRET_WIDTH,
+} from './chordDiagramGeometry';
 
-describe('stringX', () => {
-  it('places string 0 (6th/low E) at the left margin', () => {
-    expect(stringX(0)).toBe(STRING_MARGIN);
+describe('stringRow / stringY', () => {
+  it('places string 0 (6th/low E) on the bottom row', () => {
+    expect(stringRow(0)).toBe(5);
   });
 
-  it('places string 5 (1st/high e) at the right margin', () => {
-    expect(stringX(5)).toBe(DIAGRAM_WIDTH - STRING_MARGIN);
+  it('places string 5 (1st/high e) on the top row', () => {
+    expect(stringRow(5)).toBe(0);
   });
 
-  it('strings are evenly spaced and ascending left to right', () => {
-    for (let i = 1; i < 6; i++) {
-      expect(stringX(i)).toBeGreaterThan(stringX(i - 1));
+  it('rows are evenly spaced, ascending in y from top (string 5) to bottom (string 0)', () => {
+    for (let s = 5; s > 0; s--) {
+      expect(stringY(s)).toBeLessThan(stringY(s - 1));
     }
+  });
+
+  it('top row sits at TOP_MARGIN', () => {
+    expect(stringY(5)).toBe(TOP_MARGIN);
+  });
+
+  it('rows step by STRING_SPACING', () => {
+    expect(stringY(4) - stringY(5)).toBe(STRING_SPACING);
   });
 });
 
-describe('fretRowY / fretToRow', () => {
-  it('row 0 is the nut/top line', () => {
-    expect(fretRowY(0)).toBe(TOP_LABEL_HEIGHT);
+describe('gridTopY / gridBottomY', () => {
+  it('matches the top and bottom string rows', () => {
+    expect(gridTopY()).toBe(stringY(5));
+    expect(gridBottomY()).toBe(stringY(0));
+  });
+});
+
+describe('fretColX / fretToCol', () => {
+  it('col 0 is the nut, at LEFT_MARGIN', () => {
+    expect(fretColX(0)).toBe(LEFT_MARGIN);
   });
 
-  it('rows increase downward by FRET_HEIGHT', () => {
-    expect(fretRowY(1) - fretRowY(0)).toBe(FRET_HEIGHT);
+  it('columns increase rightward by FRET_WIDTH', () => {
+    expect(fretColX(1) - fretColX(0)).toBe(FRET_WIDTH);
   });
 
-  it('maps a fret at baseFret to row 1', () => {
-    expect(fretToRow(3, 3)).toBe(1);
-    expect(fretToRow(8, 8)).toBe(1);
+  it('maps a fret at baseFret to col 1', () => {
+    expect(fretToCol(3, 3)).toBe(1);
+    expect(fretToCol(8, 8)).toBe(1);
   });
 
-  it('maps a fret above baseFret to a higher row', () => {
-    expect(fretToRow(5, 3)).toBe(3);
+  it('maps a fret above baseFret to a higher column', () => {
+    expect(fretToCol(5, 3)).toBe(3);
   });
 
   it('returns null for a fret below baseFret', () => {
-    expect(fretToRow(2, 3)).toBeNull();
+    expect(fretToCol(2, 3)).toBeNull();
   });
 
   it('returns null for a fret far beyond the visible grid', () => {
-    expect(fretToRow(20, 1)).toBeNull();
+    expect(fretToCol(20, 1)).toBeNull();
   });
 });
 
-describe('dotY', () => {
-  it('centers the dot within its fret row', () => {
-    expect(dotY(1)).toBe(fretRowY(0) + FRET_HEIGHT / 2);
+describe('dotX', () => {
+  it('centers the dot within its fret column', () => {
+    expect(dotX(1)).toBe(fretColX(0) + FRET_WIDTH / 2);
+  });
+});
+
+describe('nut-side label columns', () => {
+  it('string number column sits left of the mark column, which sits left of the nut', () => {
+    expect(stringNumberX()).toBeLessThan(markX());
+    expect(markX()).toBeLessThan(fretColX(0));
+  });
+
+  it('string numbering runs 6 (low E, string 0) down to 1 (high e, string 5)', () => {
+    expect(stringNumberLabel(0)).toBe(6);
+    expect(stringNumberLabel(5)).toBe(1);
+  });
+
+  it('note/degree label column sits right of the fret grid', () => {
+    expect(labelX()).toBeGreaterThan(fretColX(5));
+    expect(labelX()).toBeLessThan(diagramWidth());
   });
 });

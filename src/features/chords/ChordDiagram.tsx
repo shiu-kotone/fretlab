@@ -4,13 +4,19 @@ import type { ChordTypeId } from '../../theory/chords';
 import { REGULAR_TUNING, fretToMidi, noteName } from '../../theory/pitch';
 import { degreeLabel } from '../../theory/degrees';
 import {
-  DIAGRAM_WIDTH,
   STRING_COUNT,
   FRET_COUNT_SHOWN,
-  stringX,
-  fretRowY,
-  fretToRow,
-  dotY,
+  stringY,
+  gridTopY,
+  gridBottomY,
+  fretColX,
+  fretToCol,
+  dotX,
+  stringNumberX,
+  stringNumberLabel,
+  markX,
+  labelX,
+  diagramWidth,
   diagramHeight,
 } from './chordDiagramGeometry';
 
@@ -27,6 +33,7 @@ interface ChordDiagramProps {
   leftHanded: boolean;
 }
 
+/** Renders text un-mirrored even inside a horizontally-flipped left-handed group (SPEC §4.1). */
 function MirroredText({
   x,
   y,
@@ -50,26 +57,34 @@ function MirroredText({
   );
 }
 
+/**
+ * Horizontal neck layout, matching the fretboard feature's orientation: nut
+ * on the left for right-handed display, mirrored to the right for
+ * left-handed (SPEC §4.1's single-group-transform pattern, reused from
+ * Fretboard.tsx). String numbers 1-6 sit outside the o/x marks on the nut
+ * side so the mute/open state and the physical string are easy to match up.
+ */
 export function ChordDiagram({ voicing, root, typeId, noteNaming, leftHanded }: ChordDiagramProps) {
   void typeId; // reserved for future use (e.g. distinguishing enharmonic degree spellings by chord type)
+  const width = diagramWidth();
   const height = diagramHeight();
   const isOpenPosition = voicing.baseFret === 1;
-  const groupTransform = leftHanded ? `translate(${DIAGRAM_WIDTH},0) scale(-1,1)` : undefined;
+  const groupTransform = leftHanded ? `translate(${width},0) scale(-1,1)` : undefined;
 
   return (
-    <svg viewBox={`0 0 ${DIAGRAM_WIDTH} ${height}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
+    <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
       <g transform={groupTransform}>
         {/* nut or baseFret number */}
         {isOpenPosition ? (
-          <rect x={stringX(0) - 3} y={fretRowY(0) - 4} width={stringX(5) - stringX(0) + 6} height={6} fill="var(--string)" />
+          <rect x={fretColX(0) - 3} y={gridTopY() - 4} width={6} height={gridBottomY() - gridTopY() + 8} fill="var(--string)" />
         ) : (
           <>
-            <line x1={stringX(0)} y1={fretRowY(0)} x2={stringX(5)} y2={fretRowY(0)} stroke="var(--line)" strokeWidth={2} />
+            <line x1={fretColX(0)} y1={gridTopY()} x2={fretColX(0)} y2={gridBottomY()} stroke="var(--line)" strokeWidth={2} />
             <MirroredText
-              x={stringX(0) - 14}
-              y={fretRowY(0) + 10}
+              x={fretColX(0)}
+              y={gridTopY() - 12}
               leftHanded={leftHanded}
-              textAnchor="end"
+              textAnchor="start"
               fontSize={16}
               fill="var(--string)"
             >
@@ -79,13 +94,13 @@ export function ChordDiagram({ voicing, root, typeId, noteNaming, leftHanded }: 
         )}
 
         {/* fret lines */}
-        {Array.from({ length: FRET_COUNT_SHOWN }, (_, i) => i + 1).map((row) => (
+        {Array.from({ length: FRET_COUNT_SHOWN }, (_, i) => i + 1).map((col) => (
           <line
-            key={`fretline-${row}`}
-            x1={stringX(0)}
-            y1={fretRowY(row)}
-            x2={stringX(5)}
-            y2={fretRowY(row)}
+            key={`fretline-${col}`}
+            x1={fretColX(col)}
+            y1={gridTopY()}
+            x2={fretColX(col)}
+            y2={gridBottomY()}
             stroke="var(--line)"
             strokeWidth={1}
           />
@@ -95,29 +110,44 @@ export function ChordDiagram({ voicing, root, typeId, noteNaming, leftHanded }: 
         {Array.from({ length: STRING_COUNT }, (_, s) => s).map((s) => (
           <line
             key={`string-${s}`}
-            x1={stringX(s)}
-            y1={fretRowY(0)}
-            x2={stringX(s)}
-            y2={fretRowY(FRET_COUNT_SHOWN)}
+            x1={fretColX(0)}
+            y1={stringY(s)}
+            x2={fretColX(FRET_COUNT_SHOWN)}
+            y2={stringY(s)}
             stroke="var(--string)"
             strokeWidth={1.5}
           />
         ))}
 
+        {/* string numbers, outside the o/x marks on the nut side */}
+        {Array.from({ length: STRING_COUNT }, (_, s) => s).map((s) => (
+          <MirroredText
+            key={`stringnum-${s}`}
+            x={stringNumberX()}
+            y={stringY(s) + 4}
+            leftHanded={leftHanded}
+            textAnchor="middle"
+            fontSize={12}
+            fill="var(--line)"
+          >
+            {stringNumberLabel(s)}
+          </MirroredText>
+        ))}
+
         {/* barres */}
         {voicing.barres?.map((barre, i) => {
-          const row = fretToRow(barre.fret, voicing.baseFret);
-          if (row === null) return null;
-          const y = dotY(row);
-          const x1 = stringX(barre.fromString);
-          const x2 = stringX(barre.toString);
+          const col = fretToCol(barre.fret, voicing.baseFret);
+          if (col === null) return null;
+          const x = dotX(col);
+          const y1 = stringY(barre.fromString);
+          const y2 = stringY(barre.toString);
           return (
             <line
               key={`barre-${i}`}
-              x1={x1}
-              y1={y}
-              x2={x2}
-              y2={y}
+              x1={x}
+              y1={y1}
+              x2={x}
+              y2={y2}
               stroke="var(--accent)"
               strokeWidth={16}
               strokeLinecap="round"
@@ -126,15 +156,15 @@ export function ChordDiagram({ voicing, root, typeId, noteNaming, leftHanded }: 
           );
         })}
 
-        {/* per-string markers: x / o / fretted dot, and note+degree label below */}
+        {/* per-string markers: x / o / fretted dot */}
         {voicing.frets.map((fret, s) => {
-          const x = stringX(s);
+          const y = stringY(s);
           if (fret === 'x') {
             return (
               <MirroredText
                 key={`mark-${s}`}
-                x={x}
-                y={fretRowY(0) - 14}
+                x={markX()}
+                y={y + 6}
                 leftHanded={leftHanded}
                 textAnchor="middle"
                 fontSize={18}
@@ -145,11 +175,11 @@ export function ChordDiagram({ voicing, root, typeId, noteNaming, leftHanded }: 
             );
           }
           if (fret === 0) {
-            return <circle key={`mark-${s}`} cx={x} cy={fretRowY(0) - 16} r={8} fill="none" stroke="var(--string)" strokeWidth={2} />;
+            return <circle key={`mark-${s}`} cx={markX()} cy={y} r={8} fill="none" stroke="var(--string)" strokeWidth={2} />;
           }
-          const row = fretToRow(fret, voicing.baseFret);
-          if (row === null) return null;
-          const y = dotY(row);
+          const col = fretToCol(fret, voicing.baseFret);
+          if (col === null) return null;
+          const x = dotX(col);
           const finger = voicing.fingers?.[s];
           return (
             <g key={`mark-${s}`}>
@@ -163,20 +193,19 @@ export function ChordDiagram({ voicing, root, typeId, noteNaming, leftHanded }: 
           );
         })}
 
-        {/* note name + degree, below the grid */}
+        {/* note name + degree, right of the grid */}
         {voicing.frets.map((fret, s) => {
           if (fret === 'x') return null;
           const midi = fretToMidi(s, fret, REGULAR_TUNING);
           const pc = ((midi % 12) + 12) % 12;
           const semitone = ((pc - root) % 12 + 12) % 12;
-          const x = stringX(s);
-          const labelY = fretRowY(FRET_COUNT_SHOWN) + 26;
+          const y = stringY(s);
           return (
             <g key={`label-${s}`}>
-              <MirroredText x={x} y={labelY} leftHanded={leftHanded} textAnchor="middle" fontSize={15} fill="var(--string)">
+              <MirroredText x={labelX()} y={y - 4} leftHanded={leftHanded} textAnchor="middle" fontSize={14} fill="var(--string)">
                 {noteName(midi, noteNaming).replace(/\d+$/, '')}
               </MirroredText>
-              <MirroredText x={x} y={labelY + 20} leftHanded={leftHanded} textAnchor="middle" fontSize={13} fill="var(--accent)">
+              <MirroredText x={labelX()} y={y + 12} leftHanded={leftHanded} textAnchor="middle" fontSize={12} fill="var(--accent)">
                 {degreeLabel(semitone)}
               </MirroredText>
             </g>
