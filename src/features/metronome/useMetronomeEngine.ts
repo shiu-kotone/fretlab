@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMetronomeStore, type SpeedTrainerSettings, type MuteBarsSettings } from '../../stores/metronomeStore';
+import { useSettingsStore } from '../../stores/settingsStore';
 import { usePlaybackCoordinatorStore } from '../../stores/playbackCoordinatorStore';
 import { useMetronomeControlStore } from '../../stores/metronomeControlStore';
-import { getAudioContext, getClickGain, setClickVolume, unlockAudio } from '../../audio/AudioEngine';
+import { usePracticeLogStore } from '../../stores/practiceLogStore';
+import { getAudioContext, getClickGain, unlockAudio } from '../../audio/AudioEngine';
 import { LookaheadScheduler } from '../../audio/LookaheadScheduler';
 import { synthesizeClick, type ClickLevel } from '../../audio/click';
 import { secondsPerBeatFromBpm, type TempoParams, type TickEvent } from '../../audio/beatPlan';
@@ -20,7 +22,6 @@ export interface BeatFlash {
 
 export function useMetronomeEngine() {
   const isPlaying = useMetronomeStore((s) => s.isPlaying);
-  const clickVolume = useMetronomeStore((s) => s.clickVolume);
   const [flash, setFlash] = useState<BeatFlash | null>(null);
 
   const schedulerRef = useRef<LookaheadScheduler | null>(null);
@@ -28,11 +29,7 @@ export function useMetronomeEngine() {
   const flashTimeoutsRef = useRef<number[]>([]);
   const barIndexRef = useRef(0);
   const startingBpmRef = useRef(useMetronomeStore.getState().bpm);
-
-  // Keep click volume live even while playing (SPEC §4.4: adjustable at any time).
-  useEffect(() => {
-    setClickVolume(clickVolume);
-  }, [clickVolume]);
+  const playStartRef = useRef<number | null>(null);
 
   const clearFlashTimeouts = () => {
     flashTimeoutsRef.current.forEach((id) => window.clearTimeout(id));
@@ -48,6 +45,13 @@ export function useMetronomeEngine() {
     useMetronomeStore.getState().setIsPlaying(false);
     setFlash(null);
     usePlaybackCoordinatorStore.getState().release('metronome');
+
+    // SPEC §5.7: credit this session's playback time to today's practice log.
+    if (playStartRef.current !== null) {
+      const minutes = (performance.now() - playStartRef.current) / 60000;
+      playStartRef.current = null;
+      void usePracticeLogStore.getState().creditAutoMinutes('metronome', minutes);
+    }
   }, []);
 
   // SPEC §4.5: progression playback claims exclusive ownership on start; stop
@@ -66,12 +70,11 @@ export function useMetronomeEngine() {
     usePlaybackCoordinatorStore.getState().claim('metronome');
     await unlockAudio();
     const ctx = getAudioContext();
-    setClickVolume(useMetronomeStore.getState().clickVolume);
 
     barIndexRef.current = 0;
     startingBpmRef.current = useMetronomeStore.getState().bpm;
 
-    if (useMetronomeStore.getState().wakeLockEnabled && 'wakeLock' in navigator) {
+    if (useSettingsStore.getState().wakeLockEnabled && 'wakeLock' in navigator) {
       navigator.wakeLock
         .request('screen')
         .then((sentinel) => {
@@ -136,6 +139,7 @@ export function useMetronomeEngine() {
     });
 
     schedulerRef.current = scheduler;
+    playStartRef.current = performance.now();
     scheduler.start(ctx.currentTime + 0.05);
     useMetronomeStore.getState().setIsPlaying(true);
   }, []);

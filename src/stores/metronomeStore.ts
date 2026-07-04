@@ -54,9 +54,7 @@ interface MetronomeSettings {
   subVolume: number;
   tone: ToneId;
   accentPattern: AccentState[];
-  clickVolume: number;
   fullScreenFlash: boolean;
-  wakeLockEnabled: boolean;
   speedTrainer: SpeedTrainerSettings;
   muteBars: MuteBarsSettings;
 }
@@ -70,9 +68,7 @@ const DEFAULT_SETTINGS: MetronomeSettings = {
   subVolume: 60,
   tone: 'woodblock',
   accentPattern: defaultAccentPattern(DEFAULT_TIME_SIG.beats),
-  clickVolume: 80,
   fullScreenFlash: false,
-  wakeLockEnabled: true,
   speedTrainer: { enabled: false, everyNBars: 4, stepBpm: 5, capBpm: 200 },
   muteBars: { enabled: false, playBars: 2, muteBars: 2 },
 };
@@ -86,9 +82,7 @@ interface MetronomeStore extends MetronomeSettings {
   setSubVolume: (v: number) => void;
   setTone: (tone: ToneId) => void;
   cycleAccentAt: (index: number) => void;
-  setClickVolume: (v: number) => void;
   setFullScreenFlash: (v: boolean) => void;
-  setWakeLockEnabled: (v: boolean) => void;
   setSpeedTrainer: (s: Partial<SpeedTrainerSettings>) => void;
   setMuteBars: (s: Partial<MuteBarsSettings>) => void;
   setIsPlaying: (v: boolean) => void;
@@ -125,11 +119,7 @@ export const useMetronomeStore = create<MetronomeStore>()(
           return { accentPattern: next };
         }),
 
-      setClickVolume: (v) => set({ clickVolume: clamp(v, 0, 100) }),
-
       setFullScreenFlash: (v) => set({ fullScreenFlash: v }),
-
-      setWakeLockEnabled: (v) => set({ wakeLockEnabled: v }),
 
       setSpeedTrainer: (partial) =>
         set((s) => {

@@ -16,6 +16,8 @@ interface ProgressionPlayerViewProps {
 export function ProgressionPlayerView({ progression, onEdit, onBack }: ProgressionPlayerViewProps) {
   const noteNaming = useSettingsStore((s) => s.noteNaming);
   const leftHanded = useSettingsStore((s) => s.leftHanded);
+  const clickVolume = useSettingsStore((s) => s.clickVolume);
+  const setClickVolume = useSettingsStore((s) => s.setClickVolume);
 
   const [activeProgression, setActiveProgression] = useState(progression);
   useEffect(() => setActiveProgression(progression), [progression]);
@@ -100,8 +102,8 @@ export function ProgressionPlayerView({ progression, onEdit, onBack }: Progressi
           type="range"
           min={0}
           max={100}
-          value={engine.clickVolume}
-          onChange={(e) => engine.setClickVolume(Number(e.target.value))}
+          value={clickVolume}
+          onChange={(e) => setClickVolume(Number(e.target.value))}
           style={{ flex: 1 }}
           aria-label="クリック音量"
         />

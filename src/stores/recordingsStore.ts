@@ -17,6 +17,7 @@ interface RecordingsState {
   rename: (id: number, name: string) => Promise<void>;
   remove: (id: number) => Promise<void>;
   getBlob: (id: number) => Promise<Blob | null>;
+  clearAll: () => Promise<void>;
 }
 
 /** SPEC §5.6: recordings persist to IndexedDB via Dexie, newest first. */
@@ -57,5 +58,10 @@ export const useRecordingsStore = create<RecordingsState>((set) => ({
   getBlob: async (id) => {
     const record = await db.recordings.get(id);
     return record?.blob ?? null;
+  },
+
+  clearAll: async () => {
+    await db.recordings.clear();
+    set({ items: [] });
   },
 }));

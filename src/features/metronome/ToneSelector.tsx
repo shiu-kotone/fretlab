@@ -1,4 +1,5 @@
 import { useMetronomeStore } from '../../stores/metronomeStore';
+import { useSettingsStore } from '../../stores/settingsStore';
 import { TONE_IDS, type ToneId } from '../../audio/click';
 
 const TONE_LABELS: Record<ToneId, string> = {
@@ -12,8 +13,8 @@ const TONE_LABELS: Record<ToneId, string> = {
 export function ToneSelector() {
   const tone = useMetronomeStore((s) => s.tone);
   const setTone = useMetronomeStore((s) => s.setTone);
-  const clickVolume = useMetronomeStore((s) => s.clickVolume);
-  const setClickVolume = useMetronomeStore((s) => s.setClickVolume);
+  const clickVolume = useSettingsStore((s) => s.clickVolume);
+  const setClickVolume = useSettingsStore((s) => s.setClickVolume);
 
   return (
     <section style={{ padding: '8px 16px' }}>

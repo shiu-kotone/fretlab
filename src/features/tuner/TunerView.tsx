@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { MicTunerPanel } from './MicTunerPanel';
 import { ReferenceTonePanel } from './ReferenceTonePanel';
+import { useActivityTimeTracker } from '../practiceLog/useActivityTimeTracker';
 
 type TunerMode = 'mic' | 'reference';
 
 export function TunerView() {
+  useActivityTimeTracker('tuner');
   const [mode, setMode] = useState<TunerMode>('mic');
 
   return (

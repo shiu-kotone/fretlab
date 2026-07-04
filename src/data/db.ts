@@ -1,6 +1,7 @@
 import Dexie, { type Table } from 'dexie';
 import type { Midi } from '../theory/pitch';
 import type { Progression } from './progressionTypes';
+import type { AutoPracticeRow, ManualPracticeRow } from './practiceLogTypes';
 
 export interface CustomTuningRecord {
   id?: number;
@@ -24,6 +25,11 @@ export interface RecordingRecord {
   createdAt: number;
 }
 
+/** SPEC §5.7: one row per (date, feature), incremented as active/playback time accrues. */
+export type AutoPracticeRecord = AutoPracticeRow;
+/** SPEC §5.7: freeform manual practice-log entries. */
+export type ManualPracticeRecord = ManualPracticeRow;
+
 /**
  * IndexedDB store for user-created data (SPEC §2.2: settings live in
  * localStorage via Zustand persist; custom tunings, recordings, progressions
@@ -33,6 +39,8 @@ export class FretLabDB extends Dexie {
   customTunings!: Table<CustomTuningRecord, number>;
   progressions!: Table<ProgressionRecord, string>;
   recordings!: Table<RecordingRecord, number>;
+  practiceAuto!: Table<AutoPracticeRecord, [string, string]>;
+  practiceManual!: Table<ManualPracticeRecord, number>;
 
   constructor() {
     super('fretlab');
@@ -47,6 +55,13 @@ export class FretLabDB extends Dexie {
       customTunings: '++id, name, createdAt',
       progressions: 'id, name, createdAt, updatedAt',
       recordings: '++id, name, createdAt',
+    });
+    this.version(4).stores({
+      customTunings: '++id, name, createdAt',
+      progressions: 'id, name, createdAt, updatedAt',
+      recordings: '++id, name, createdAt',
+      practiceAuto: '[date+feature], date, feature',
+      practiceManual: '++id, date, createdAt',
     });
   }
 }

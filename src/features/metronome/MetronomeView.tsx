@@ -1,4 +1,5 @@
 import { useMetronomeStore } from '../../stores/metronomeStore';
+import { useSettingsStore } from '../../stores/settingsStore';
 import { useMetronomeEngine } from './useMetronomeEngine';
 import { AccentEditor } from './AccentEditor';
 import { BpmControl } from './BpmControl';
@@ -11,8 +12,8 @@ export function MetronomeView() {
   const { isPlaying, flash, toggle } = useMetronomeEngine();
   const fullScreenFlash = useMetronomeStore((s) => s.fullScreenFlash);
   const setFullScreenFlash = useMetronomeStore((s) => s.setFullScreenFlash);
-  const wakeLockEnabled = useMetronomeStore((s) => s.wakeLockEnabled);
-  const setWakeLockEnabled = useMetronomeStore((s) => s.setWakeLockEnabled);
+  const wakeLockEnabled = useSettingsStore((s) => s.wakeLockEnabled);
+  const setWakeLockEnabled = useSettingsStore((s) => s.setWakeLockEnabled);
 
   const showFullFlash = fullScreenFlash && flash?.isMainBeat && flash.level !== 'mute';
 

@@ -4,6 +4,8 @@ import { useCustomTuningsStore } from '../../stores/customTuningsStore';
 import { TUNING_PRESETS, CUSTOM_TUNING_MAX_OFFSET } from '../../data/tunings';
 import { REGULAR_TUNING, noteName } from '../../theory/pitch';
 import { resolveTuningName, isRegularTuning } from '../../theory/tuningResolver';
+import { DataManagement } from './DataManagement';
+import { AboutSection } from './AboutSection';
 
 const THEME_OPTIONS: { id: ThemePreference; label: string }[] = [
   { id: 'system', label: '端末に追従' },
@@ -22,6 +24,12 @@ export function SettingsPanel() {
   const setTheme = useSettingsStore((s) => s.setTheme);
   const currentTuningId = useSettingsStore((s) => s.currentTuningId);
   const setCurrentTuningId = useSettingsStore((s) => s.setCurrentTuningId);
+  const guitarVolume = useSettingsStore((s) => s.guitarVolume);
+  const setGuitarVolume = useSettingsStore((s) => s.setGuitarVolume);
+  const clickVolume = useSettingsStore((s) => s.clickVolume);
+  const setClickVolume = useSettingsStore((s) => s.setClickVolume);
+  const wakeLockEnabled = useSettingsStore((s) => s.wakeLockEnabled);
+  const setWakeLockEnabled = useSettingsStore((s) => s.setWakeLockEnabled);
 
   const customItems = useCustomTuningsStore((s) => s.items);
   const loaded = useCustomTuningsStore((s) => s.loaded);
@@ -206,6 +214,39 @@ export function SettingsPanel() {
             </button>
           ))}
         </div>
+      </section>
+
+      <section style={sectionStyle}>
+        <h3 style={headingStyle}>音量</h3>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 13, minWidth: 80 }}>ギター音</span>
+          <input type="range" min={0} max={100} value={guitarVolume} onChange={(e) => setGuitarVolume(Number(e.target.value))} style={{ flex: 1 }} />
+          <span className="tabular-nums" style={{ minWidth: 32, textAlign: 'right' }}>
+            {guitarVolume}%
+          </span>
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 13, minWidth: 80 }}>クリック音</span>
+          <input type="range" min={0} max={100} value={clickVolume} onChange={(e) => setClickVolume(Number(e.target.value))} style={{ flex: 1 }} />
+          <span className="tabular-nums" style={{ minWidth: 32, textAlign: 'right' }}>
+            {clickVolume}%
+          </span>
+        </label>
+      </section>
+
+      <section style={sectionStyle}>
+        <label style={rowStyle}>
+          <span>画面を消灯しない(再生中)</span>
+          <input type="checkbox" checked={wakeLockEnabled} onChange={(e) => setWakeLockEnabled(e.target.checked)} />
+        </label>
+      </section>
+
+      <section style={sectionStyle}>
+        <DataManagement />
+      </section>
+
+      <section style={sectionStyle}>
+        <AboutSection />
       </section>
 
       <p style={{ fontSize: 11, color: 'var(--line)' }}>

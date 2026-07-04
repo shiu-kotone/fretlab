@@ -4,7 +4,7 @@ import { computeBarSegments, findActiveSegment, type BarSegment } from '../../da
 import { parseChordId, getVoicingsForChord } from '../../data/chordLibrary';
 import { findStrumPattern } from '../../data/strumPatterns';
 import type { Voicing } from '../../data/voicingTypes';
-import { getAudioContext, getClickGain, getGuitarSynth, setClickVolume, unlockAudio } from '../../audio/AudioEngine';
+import { getAudioContext, getClickGain, getGuitarSynth, unlockAudio } from '../../audio/AudioEngine';
 import { LookaheadScheduler } from '../../audio/LookaheadScheduler';
 import { synthesizeClick } from '../../audio/click';
 import { secondsPerBeatFromBpm, tickTimings, type TempoParams, type TickEvent } from '../../audio/beatPlan';
@@ -12,6 +12,7 @@ import { REGULAR_TUNING, fretToMidi } from '../../theory/pitch';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useMetronomeStore } from '../../stores/metronomeStore';
 import { usePlaybackCoordinatorStore } from '../../stores/playbackCoordinatorStore';
+import { usePracticeLogStore } from '../../stores/practiceLogStore';
 
 const COUNT_IN_BARS = 1;
 /** Tolerance for matching a strum-pattern step's beat offset against the scheduler's tick grid (well under the smallest real spacing of 0.25 beat). */
@@ -60,15 +61,15 @@ export function useProgressionEngine(progression: Progression | null) {
   const [currentChord, setCurrentChord] = useState<ActiveChordInfo | null>(null);
   const [nextChord, setNextChord] = useState<ActiveChordInfo | null>(null);
   const [clickEnabled, setClickEnabled] = useState(true);
-  const [clickVolume, setClickVolumeState] = useState(70);
   const [bpm, setBpmState] = useState(progression?.bpm ?? 100);
 
   const schedulerRef = useRef<LookaheadScheduler | null>(null);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const progressionRef = useRef(progression);
   const clickEnabledRef = useRef(clickEnabled);
-  const clickVolumeRef = useRef(clickVolume);
   const bpmRef = useRef(bpm);
   const lastSegmentKeyRef = useRef<string | null>(null);
+  const playStartRef = useRef<number | null>(null);
 
   useEffect(() => {
     progressionRef.current = progression;
@@ -80,10 +81,6 @@ export function useProgressionEngine(progression: Progression | null) {
   useEffect(() => {
     clickEnabledRef.current = clickEnabled;
   }, [clickEnabled]);
-  useEffect(() => {
-    clickVolumeRef.current = clickVolume;
-    setClickVolume(clickVolume);
-  }, [clickVolume]);
 
   /** SPEC §5.3 "BPMは再生中も変更可(次拍から反映)": read fresh every tick, like the metronome engine. */
   const setBpm = useCallback((v: number) => {
@@ -96,11 +93,20 @@ export function useProgressionEngine(progression: Progression | null) {
     schedulerRef.current?.stop();
     schedulerRef.current = null;
     lastSegmentKeyRef.current = null;
+    wakeLockRef.current?.release().catch(() => {});
+    wakeLockRef.current = null;
     setIsPlaying(false);
     setCurrentBarIndex(null);
     setCurrentChord(null);
     setNextChord(null);
     usePlaybackCoordinatorStore.getState().release('progression');
+
+    // SPEC §5.7: credit this session's playback time to today's practice log.
+    if (playStartRef.current !== null) {
+      const minutes = (performance.now() - playStartRef.current) / 60000;
+      playStartRef.current = null;
+      void usePracticeLogStore.getState().creditAutoMinutes('progression', minutes);
+    }
   }, []);
 
   // SPEC §4.5: metronome playback claims exclusive ownership on start; stop if it takes over while we're playing.
@@ -171,9 +177,19 @@ export function useProgressionEngine(progression: Progression | null) {
     usePlaybackCoordinatorStore.getState().claim('progression');
     await unlockAudio();
     const ctx = getAudioContext();
-    setClickVolume(clickVolumeRef.current);
     bpmRef.current = p.bpm;
     setBpmState(p.bpm);
+
+    if (useSettingsStore.getState().wakeLockEnabled && 'wakeLock' in navigator) {
+      navigator.wakeLock
+        .request('screen')
+        .then((sentinel) => {
+          wakeLockRef.current = sentinel;
+        })
+        .catch(() => {
+          // Not fatal (SPEC §4.4): playback continues without the lock.
+        });
+    }
 
     lastSegmentKeyRef.current = null;
     setCurrentBarIndex(null);
@@ -250,6 +266,7 @@ export function useProgressionEngine(progression: Progression | null) {
     });
 
     schedulerRef.current = scheduler;
+    playStartRef.current = performance.now();
     scheduler.start(ctx.currentTime + 0.05);
     setIsPlaying(true);
   }, [stop, updateDisplay, playStrumAction]);
@@ -271,8 +288,6 @@ export function useProgressionEngine(progression: Progression | null) {
     nextChord,
     clickEnabled,
     setClickEnabled,
-    clickVolume,
-    setClickVolume: setClickVolumeState,
     bpm,
     setBpm,
     start,

@@ -10,7 +10,8 @@ import { useSettingsStore, resolveThemeMode } from './stores/settingsStore';
 import { useCustomTuningsStore } from './stores/customTuningsStore';
 import { useNavigationStore } from './stores/navigationStore';
 import { resolveTuningName } from './theory/tuningResolver';
-import { unlockAudio } from './audio/AudioEngine';
+import { unlockAudio, setGuitarVolume, setClickVolume } from './audio/AudioEngine';
+import { OnboardingBanner } from './features/settings/OnboardingBanner';
 
 export default function App() {
   const tab = useNavigationStore((s) => s.activeTab);
@@ -20,12 +21,22 @@ export default function App() {
   const theme = useSettingsStore((s) => s.theme);
   const leftHanded = useSettingsStore((s) => s.leftHanded);
   const currentTuningId = useSettingsStore((s) => s.currentTuningId);
+  const guitarVolume = useSettingsStore((s) => s.guitarVolume);
+  const clickVolume = useSettingsStore((s) => s.clickVolume);
   const customTunings = useCustomTuningsStore((s) => s.items);
   const loadCustomTunings = useCustomTuningsStore((s) => s.load);
 
   useEffect(() => {
     void loadCustomTunings();
   }, [loadCustomTunings]);
+
+  // SPEC §5.8: guitar/click volume are global settings shared by every feature's audio.
+  useEffect(() => {
+    setGuitarVolume(guitarVolume);
+  }, [guitarVolume]);
+  useEffect(() => {
+    setClickVolume(clickVolume);
+  }, [clickVolume]);
 
   // SPEC §4.6: theme preference resolved here and applied as [data-theme] on
   // <html> so an explicit dark/light choice always wins over the OS setting,
@@ -83,6 +94,7 @@ export default function App() {
           )}
         </span>
       </header>
+      <OnboardingBanner />
       <main style={{ flex: 1, overflow: 'auto' }}>
         {/* MetronomeView stays mounted across tab switches so playback (the
             AudioContext-driven scheduler + Wake Lock) is never torn down —

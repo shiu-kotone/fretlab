@@ -70,4 +70,14 @@ describe('useRecordingsStore', () => {
   it('getBlob() returns null for a missing id', async () => {
     expect(await useRecordingsStore.getState().getBlob(99999)).toBeNull();
   });
+
+  it('clearAll() wipes IndexedDB and in-memory state', async () => {
+    await useRecordingsStore.getState().add({ name: 'A', blob: makeBlob(10), mimeType: 'audio/webm', durationSeconds: 1 });
+    await useRecordingsStore.getState().add({ name: 'B', blob: makeBlob(10), mimeType: 'audio/webm', durationSeconds: 1 });
+    await useRecordingsStore.getState().clearAll();
+    expect(useRecordingsStore.getState().items).toEqual([]);
+
+    await useRecordingsStore.getState().load();
+    expect(useRecordingsStore.getState().items).toEqual([]);
+  });
 });

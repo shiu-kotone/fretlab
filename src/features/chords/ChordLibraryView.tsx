@@ -10,6 +10,7 @@ import { CHORD_TYPES, type ChordGroup, type ChordTypeId } from '../../theory/cho
 import { parseChordSymbol } from '../../theory/chordParser';
 import { noteName } from '../../theory/pitch';
 import { isRegularTuning } from '../../theory/tuningResolver';
+import { useActivityTimeTracker } from '../practiceLog/useActivityTimeTracker';
 
 const ROOT_PITCH_CLASSES = Array.from({ length: 12 }, (_, i) => i);
 const GROUP_LABELS: Record<ChordGroup, string> = {
@@ -22,6 +23,7 @@ const GROUPS: ChordGroup[] = ['basic', 'seventh', 'tension', 'other'];
 const LONG_PRESS_MS = 400;
 
 export function ChordLibraryView() {
+  useActivityTimeTracker('chords');
   const noteNaming = useSettingsStore((s) => s.noteNaming);
   const leftHanded = useSettingsStore((s) => s.leftHanded);
   const currentTuningId = useSettingsStore((s) => s.currentTuningId);

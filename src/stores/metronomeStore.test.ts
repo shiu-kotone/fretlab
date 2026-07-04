@@ -42,7 +42,6 @@ describe('useMetronomeStore', () => {
       timeSig: { beats: 4, unit: 4 },
       accentPattern: defaultAccentPattern(4),
       subVolume: 60,
-      clickVolume: 80,
       isPlaying: false,
       speedTrainer: { enabled: false, everyNBars: 4, stepBpm: 5, capBpm: 200 },
       muteBars: { enabled: false, playBars: 2, muteBars: 2 },

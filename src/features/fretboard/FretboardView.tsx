@@ -11,6 +11,7 @@ import { fretToMidi, noteName } from '../../theory/pitch';
 import { scaleTones } from '../../theory/scales';
 import { degreeColor, degreeLabel } from '../../theory/degrees';
 import { computePositionBoxes, isFretInBox } from '../../theory/positionBoxes';
+import { useActivityTimeTracker } from '../practiceLog/useActivityTimeTracker';
 
 const ZOOM_OPTIONS: ZoomFrets[] = [12, 15, 22];
 const LABEL_MODE_OPTIONS: { id: LabelMode; label: string }[] = [
@@ -36,6 +37,7 @@ function useIsLandscape(): boolean {
 }
 
 export function FretboardView() {
+  useActivityTimeTracker('fretboard');
   const currentTuningId = useSettingsStore((s) => s.currentTuningId);
   const customItems = useCustomTuningsStore((s) => s.items);
   const tuning = resolveTuning(currentTuningId, customItems);
