@@ -253,6 +253,10 @@ export function Fretboard({
                     </MirroredText>
                   </>
                 ) : (
+                  // fret 0 is skipped here — its note name is already shown once in the
+                  // open-string zone label; repeating it here (SPEC §4.6's "natural" mode
+                  // in particular) drew the same letter twice on top of each other.
+                  fret > 0 &&
                   shouldShowBaseLabel(tuningIndex, fret, pc) && (
                     <MirroredText x={cx} y={cy - 18} leftHanded={leftHanded} textAnchor="middle" fontSize={18} fill="var(--string)">
                       {noteName(midi, noteNaming).replace(/\d+$/, '')}

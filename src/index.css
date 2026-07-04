@@ -24,10 +24,32 @@
  * 'dark' / 'light' preference and applied as [data-theme] on <html>, so an
  * explicit user choice always wins over the OS setting (SPEC §4.6).
  */
+/*
+ * Every token is redefined here, not just the background trio — components
+ * reuse --string/--accent for text on both --bg and --surface (including
+ * accent-filled buttons whose text is --bg), so leaving them at their dark
+ * (light-on-black) values made most labels nearly unreadable on a light
+ * background. Values below are chosen and verified (WCAG relative-luminance
+ * contrast ratio) against both --surface (#fff) and --bg (#f4efe8):
+ *   --string  vs --surface: ~10.7:1   (body/button text)
+ *   --accent  vs --surface: ~5.4:1    (accent-colored text/icons)
+ *   --bg      vs --accent (bg-colored text on accent-filled buttons): ~4.7:1
+ *   --degree-* vs --bg (labels drawn inside degree-colored highlight dots): all >= 4.3:1
+ */
 :root[data-theme='light'] {
   --bg: #f4efe8;
   --surface: #ffffff;
-  --line: #ddd4c6;
+  --line: #d8cec0;
+  --accent: #9c5b00;
+  --string: #453d33;
+  --ok: #2e7d36;
+  --warn: #c23327;
+
+  --degree-third: #a8402f;
+  --degree-fifth: #2f6ea8;
+  --degree-seventh: #6f4fb0;
+  --degree-tension: #5c6874;
+
   color-scheme: light;
 }
 

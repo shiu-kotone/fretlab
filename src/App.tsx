@@ -9,14 +9,18 @@ import { useMetronomeStore } from './stores/metronomeStore';
 import { useSettingsStore, resolveThemeMode } from './stores/settingsStore';
 import { useCustomTuningsStore } from './stores/customTuningsStore';
 import { useNavigationStore } from './stores/navigationStore';
+import { usePlaybackCoordinatorStore } from './stores/playbackCoordinatorStore';
 import { resolveTuningName } from './theory/tuningResolver';
 import { unlockAudio, setGuitarVolume, setClickVolume } from './audio/AudioEngine';
 import { OnboardingBanner } from './features/settings/OnboardingBanner';
+import { useLabTabStore } from './features/settings/LabView';
 
 export default function App() {
   const tab = useNavigationStore((s) => s.activeTab);
   const setTab = useNavigationStore((s) => s.setActiveTab);
   const isPlaying = useMetronomeStore((s) => s.isPlaying);
+  const progressionPlaying = usePlaybackCoordinatorStore((s) => s.activeOwner === 'progression');
+  const setLabSegment = useLabTabStore((s) => s.setSegment);
 
   const theme = useSettingsStore((s) => s.theme);
   const leftHanded = useSettingsStore((s) => s.leftHanded);
@@ -64,9 +68,6 @@ export default function App() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <header
-        onClick={() => setTab('lab')}
-        role="button"
-        aria-label="設定を開く"
         style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -78,7 +79,24 @@ export default function App() {
         }}
       >
         <span style={{ fontFamily: 'var(--font-display)', color: 'var(--accent)' }}>FretLab</span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--string)' }}>
+        <button
+          onClick={() => {
+            setLabSegment('settings');
+            setTab('lab');
+          }}
+          aria-label="設定を開く"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            minHeight: 44,
+            padding: '0 4px',
+            border: 'none',
+            background: 'transparent',
+            fontSize: 12,
+            color: 'var(--string)',
+          }}
+        >
           <span>{tuningName}</span>
           {leftHanded && (
             <span
@@ -92,23 +110,35 @@ export default function App() {
               左利き
             </span>
           )}
-        </span>
+          <GearIcon />
+        </button>
       </header>
       <OnboardingBanner />
       <main style={{ flex: 1, overflow: 'auto' }}>
-        {/* MetronomeView stays mounted across tab switches so playback (the
-            AudioContext-driven scheduler + Wake Lock) is never torn down —
-            SPEC §5.4 "再生状態はタブ移動しても継続". Inactive tabs are hidden
-            via CSS, not unmounted. */}
+        {/* MetronomeView and ChordTabView (progression playback) stay mounted
+            across tab switches so their audio scheduling is never torn down —
+            SPEC §3.1 "タブ切替時も再生中の音... は止めない". Inactive tabs are
+            hidden via CSS, not unmounted. */}
         <div style={{ display: tab === 'metronome' ? 'block' : 'none', height: '100%' }}>
           <MetronomeView />
         </div>
+        <div style={{ display: tab === 'chords' ? 'flex' : 'none', flexDirection: 'column', height: '100%' }}>
+          <ChordTabView />
+        </div>
         {tab === 'fretboard' && <FretboardView />}
-        {tab === 'chords' && <ChordTabView />}
         {tab === 'tuner' && <TunerView />}
         {tab === 'lab' && <LabView />}
       </main>
-      <TabBar active={tab} onChange={setTab} badges={{ metronome: isPlaying }} />
+      <TabBar active={tab} onChange={setTab} badges={{ metronome: isPlaying, chords: progressionPlaying }} />
     </div>
+  );
+}
+
+function GearIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
   );
 }

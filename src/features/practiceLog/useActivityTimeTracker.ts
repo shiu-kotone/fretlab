@@ -16,8 +16,14 @@ const ACTIVITY_EVENTS = ['pointerdown', 'pointermove', 'keydown', 'wheel'] as co
  * writes. Mount this once per screen that should count as "active use"
  * (fretboard, chord library, tuner) — playback-driven features (metronome,
  * progression) instead credit their actual play duration directly.
+ *
+ * `enabled` covers screens that can stay mounted while not actually visible
+ * (the コード tab is kept alive in the background so progression playback
+ * survives tab switches — SPEC §3.1 — so its chord-library activity tracker
+ * must only accrue time while that tab is the one actually on screen).
+ * Toggling it off flushes whatever was accumulated so far, same as unmount.
  */
-export function useActivityTimeTracker(feature: PracticeFeature): void {
+export function useActivityTimeTracker(feature: PracticeFeature, enabled = true): void {
   const creditAutoMinutes = usePracticeLogStore((s) => s.creditAutoMinutes);
 
   const lastActivityRef = useRef(Date.now());
@@ -25,6 +31,8 @@ export function useActivityTimeTracker(feature: PracticeFeature): void {
   const tickCountRef = useRef(0);
 
   useEffect(() => {
+    if (!enabled) return;
+
     const markActive = () => {
       lastActivityRef.current = Date.now();
     };
@@ -55,5 +63,5 @@ export function useActivityTimeTracker(feature: PracticeFeature): void {
       window.clearInterval(intervalId);
       flush();
     };
-  }, [feature, creditAutoMinutes]);
+  }, [feature, creditAutoMinutes, enabled]);
 }

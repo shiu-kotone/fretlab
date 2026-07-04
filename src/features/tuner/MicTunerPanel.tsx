@@ -16,7 +16,7 @@ export function MicTunerPanel() {
   const tuning = resolveTuning(currentTuningId, customItems);
   const metronomePlaying = useMetronomeStore((s) => s.isPlaying);
 
-  const { permissionState, requestPermission, reading, fixedStringIndex, setFixedStringIndex, lastError, debug } =
+  const { permissionState, requestPermission, reading, fixedStringIndex, setFixedStringIndex, lastError } =
     useTunerEngine(tuning, a4);
 
   const highlightIndex = fixedStringIndex ?? reading.nearestStringIndex;
@@ -127,11 +127,6 @@ export function MicTunerPanel() {
               +
             </button>
           </div>
-
-          <p className="tabular-nums" style={{ fontSize: 10, color: 'var(--line)', textAlign: 'center', margin: 0 }}>
-            lvl: {debug.level.toFixed(4)} / raw: {debug.rawFrequency ? `${debug.rawFrequency.toFixed(1)}Hz` : '—'} /
-            conf: {debug.rawConfidence.toFixed(3)}
-          </p>
         </>
       )}
     </div>

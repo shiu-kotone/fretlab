@@ -23,7 +23,11 @@ const GROUPS: ChordGroup[] = ['basic', 'seventh', 'tension', 'other'];
 const LONG_PRESS_MS = 400;
 
 export function ChordLibraryView() {
-  useActivityTimeTracker('chords');
+  // The コード tab stays mounted in the background (SPEC §3.1, progression
+  // playback continuity), so this must only accrue time while that tab is
+  // actually the one on screen — not whenever this component happens to be mounted.
+  const isChordsTabActive = useNavigationStore((s) => s.activeTab === 'chords');
+  useActivityTimeTracker('chords', isChordsTabActive);
   const noteNaming = useSettingsStore((s) => s.noteNaming);
   const leftHanded = useSettingsStore((s) => s.leftHanded);
   const currentTuningId = useSettingsStore((s) => s.currentTuningId);

@@ -10,8 +10,13 @@ interface LabTabState {
   setSegment: (s: LabSegment) => void;
 }
 
-/** Non-persisted so it survives the ラボ tab unmounting on tab switch, matching ChordTabView's pattern. */
-const useLabTabStore = create<LabTabState>((set) => ({
+/**
+ * Non-persisted so it survives the ラボ tab unmounting on tab switch, matching
+ * ChordTabView's pattern. Exported so App.tsx's header can jump straight to
+ * the 設定 segment (SPEC §5.8) instead of just switching to the ラボ tab and
+ * landing on whatever segment was last open.
+ */
+export const useLabTabStore = create<LabTabState>((set) => ({
   segment: 'recorder',
   setSegment: (segment) => set({ segment }),
 }));
