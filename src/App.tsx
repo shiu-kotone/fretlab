@@ -1,18 +1,20 @@
-import { useEffect, useState } from 'react';
-import { TabBar, type TabId } from './components/TabBar';
-import { Placeholder } from './components/Placeholder';
+import { useEffect } from 'react';
+import { TabBar } from './components/TabBar';
 import { MetronomeView } from './features/metronome/MetronomeView';
 import { FretboardView } from './features/fretboard/FretboardView';
+import { ChordLibraryView } from './features/chords/ChordLibraryView';
 import { TunerView } from './features/tuner/TunerView';
 import { LabView } from './features/settings/LabView';
 import { useMetronomeStore } from './stores/metronomeStore';
 import { useSettingsStore, resolveThemeMode } from './stores/settingsStore';
 import { useCustomTuningsStore } from './stores/customTuningsStore';
+import { useNavigationStore } from './stores/navigationStore';
 import { resolveTuningName } from './theory/tuningResolver';
 import { unlockAudio } from './audio/AudioEngine';
 
 export default function App() {
-  const [tab, setTab] = useState<TabId>('metronome');
+  const tab = useNavigationStore((s) => s.activeTab);
+  const setTab = useNavigationStore((s) => s.setActiveTab);
   const isPlaying = useMetronomeStore((s) => s.isPlaying);
 
   const theme = useSettingsStore((s) => s.theme);
@@ -90,7 +92,7 @@ export default function App() {
           <MetronomeView />
         </div>
         {tab === 'fretboard' && <FretboardView />}
-        {tab === 'chords' && <Placeholder title="コード" />}
+        {tab === 'chords' && <ChordLibraryView />}
         {tab === 'tuner' && <TunerView />}
         {tab === 'lab' && <LabView />}
       </main>
