@@ -5,6 +5,7 @@ import { parseChordId, getVoicingsForChord } from '../../data/chordLibrary';
 import { findStrumPattern } from '../../data/strumPatterns';
 import type { Voicing } from '../../data/voicingTypes';
 import { getAudioContext, getClickGain, getGuitarSynth, unlockAudio } from '../../audio/AudioEngine';
+import { acquireWakeLock } from '../../audio/wakeLock';
 import { LookaheadScheduler } from '../../audio/LookaheadScheduler';
 import { synthesizeClick } from '../../audio/click';
 import { jitteredVelocity, jitteredTimingSeconds, stringDirectionTilt, brightnessForString } from '../../audio/strumHumanize';
@@ -187,16 +188,7 @@ export function useProgressionEngine(progression: Progression | null) {
     bpmRef.current = p.bpm;
     setBpmState(p.bpm);
 
-    if (useSettingsStore.getState().wakeLockEnabled && 'wakeLock' in navigator) {
-      navigator.wakeLock
-        .request('screen')
-        .then((sentinel) => {
-          wakeLockRef.current = sentinel;
-        })
-        .catch(() => {
-          // Not fatal (SPEC §4.4): playback continues without the lock.
-        });
-    }
+    acquireWakeLock(wakeLockRef);
 
     lastSegmentKeyRef.current = null;
     setCurrentBarIndex(null);
@@ -298,6 +290,18 @@ export function useProgressionEngine(progression: Progression | null) {
   }, [start, stop]);
 
   useEffect(() => stop, [stop]);
+
+  // POLISH.md R4-2: the OS releases the wake lock on backgrounding; reacquire
+  // it once the app is foregrounded again if playback is still going.
+  useEffect(() => {
+    const handler = () => {
+      if (document.visibilityState === 'visible' && schedulerRef.current && !wakeLockRef.current) {
+        acquireWakeLock(wakeLockRef);
+      }
+    };
+    document.addEventListener('visibilitychange', handler);
+    return () => document.removeEventListener('visibilitychange', handler);
+  }, []);
 
   return {
     isPlaying,

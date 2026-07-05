@@ -16,6 +16,8 @@ import {
   STRING_SPACING,
   LEFT_MARGIN,
   FRET_WIDTH,
+  interpretSwipe,
+  SWIPE_THRESHOLD_PX,
 } from './chordDiagramGeometry';
 
 describe('stringRow / stringY', () => {
@@ -96,5 +98,24 @@ describe('nut-side label columns', () => {
   it('note/degree label column sits right of the fret grid', () => {
     expect(labelX()).toBeGreaterThan(fretColX(5));
     expect(labelX()).toBeLessThan(diagramWidth());
+  });
+});
+
+describe('interpretSwipe', () => {
+  it('reads a left swipe past the threshold as "next"', () => {
+    expect(interpretSwipe(-(SWIPE_THRESHOLD_PX + 1), 0)).toBe('next');
+  });
+
+  it('reads a right swipe past the threshold as "prev"', () => {
+    expect(interpretSwipe(SWIPE_THRESHOLD_PX + 1, 0)).toBe('prev');
+  });
+
+  it('ignores horizontal movement at or under the threshold', () => {
+    expect(interpretSwipe(SWIPE_THRESHOLD_PX, 0)).toBeNull();
+    expect(interpretSwipe(10, 0)).toBeNull();
+  });
+
+  it('ignores a swipe with too much vertical movement (a scroll, not a swipe)', () => {
+    expect(interpretSwipe(-(SWIPE_THRESHOLD_PX + 10), SWIPE_THRESHOLD_PX + 5)).toBeNull();
   });
 });

@@ -76,3 +76,19 @@ export function markX(): number {
 export function labelX(): number {
   return LEFT_MARGIN + GRID_WIDTH + LABEL_COLUMN_WIDTH / 2;
 }
+
+/** POLISH.md R4-1: horizontal swipe threshold in px to switch voicing. */
+export const SWIPE_THRESHOLD_PX = 40;
+
+/**
+ * A swipe is horizontal movement past SWIPE_THRESHOLD_PX with vertical
+ * movement staying under that same threshold. The direction mapping is
+ * deliberately in screen space (left swipe = next, right swipe = previous)
+ * and does not flip in left-handed mode: the diagram's mirrored *display*
+ * shouldn't also flip which physical swipe direction means "next", or the
+ * gesture would mean something different for every user.
+ */
+export function interpretSwipe(dx: number, dy: number): 'prev' | 'next' | null {
+  if (Math.abs(dx) <= SWIPE_THRESHOLD_PX || Math.abs(dy) >= SWIPE_THRESHOLD_PX) return null;
+  return dx < 0 ? 'next' : 'prev';
+}

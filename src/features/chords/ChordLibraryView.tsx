@@ -162,7 +162,16 @@ export function ChordLibraryView() {
 
       {voicing ? (
         <>
-          <ChordDiagram voicing={voicing} root={selectedRoot} typeId={selectedType} noteNaming={noteNaming} leftHanded={leftHanded} />
+          <ChordDiagram
+            voicing={voicing}
+            root={selectedRoot}
+            typeId={selectedType}
+            noteNaming={noteNaming}
+            leftHanded={leftHanded}
+            onSwipeVoicing={(direction) =>
+              setSelectedVoicingIndex(direction === 'next' ? Math.min(voicings.length - 1, voicingIndex + 1) : Math.max(0, voicingIndex - 1))
+            }
+          />
 
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             {voicings.map((_, i) => (

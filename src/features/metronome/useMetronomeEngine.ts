@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMetronomeStore, type SpeedTrainerSettings, type MuteBarsSettings } from '../../stores/metronomeStore';
-import { useSettingsStore } from '../../stores/settingsStore';
 import { usePlaybackCoordinatorStore } from '../../stores/playbackCoordinatorStore';
 import { useMetronomeControlStore } from '../../stores/metronomeControlStore';
 import { usePracticeLogStore } from '../../stores/practiceLogStore';
 import { getAudioContext, getClickGain, unlockAudio } from '../../audio/AudioEngine';
+import { acquireWakeLock } from '../../audio/wakeLock';
 import { LookaheadScheduler } from '../../audio/LookaheadScheduler';
 import { synthesizeClick, type ClickLevel } from '../../audio/click';
 import { secondsPerBeatFromBpm, type TempoParams, type TickEvent } from '../../audio/beatPlan';
@@ -74,16 +74,7 @@ export function useMetronomeEngine() {
     barIndexRef.current = 0;
     startingBpmRef.current = useMetronomeStore.getState().bpm;
 
-    if (useSettingsStore.getState().wakeLockEnabled && 'wakeLock' in navigator) {
-      navigator.wakeLock
-        .request('screen')
-        .then((sentinel) => {
-          wakeLockRef.current = sentinel;
-        })
-        .catch(() => {
-          // Not fatal (SPEC §4.4): playback continues without the lock.
-        });
-    }
+    acquireWakeLock(wakeLockRef);
 
     const subGain = ctx.createGain();
     subGain.connect(getClickGain());
@@ -164,6 +155,18 @@ export function useMetronomeEngine() {
   // tab switches — App.tsx keeps this component mounted so playback survives them
   // (SPEC §5.4: "再生状態はタブ移動しても継続").
   useEffect(() => stop, [stop]);
+
+  // POLISH.md R4-2: the OS releases the wake lock on backgrounding; reacquire
+  // it once the app is foregrounded again if playback is still going.
+  useEffect(() => {
+    const handler = () => {
+      if (document.visibilityState === 'visible' && schedulerRef.current && !wakeLockRef.current) {
+        acquireWakeLock(wakeLockRef);
+      }
+    };
+    document.addEventListener('visibilitychange', handler);
+    return () => document.removeEventListener('visibilitychange', handler);
+  }, []);
 
   return { isPlaying, flash, toggle };
 }

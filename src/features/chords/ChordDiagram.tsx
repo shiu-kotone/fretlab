@@ -1,4 +1,4 @@
-import type { ReactNode, SVGProps } from 'react';
+import { useRef, type PointerEvent, type ReactNode, type SVGProps } from 'react';
 import type { Voicing } from '../../data/voicingTypes';
 import type { ChordTypeId } from '../../theory/chords';
 import { REGULAR_TUNING, fretToMidi, noteName } from '../../theory/pitch';
@@ -18,6 +18,7 @@ import {
   labelX,
   diagramWidth,
   diagramHeight,
+  interpretSwipe,
 } from './chordDiagramGeometry';
 
 interface NoteNaming {
@@ -31,6 +32,8 @@ interface ChordDiagramProps {
   typeId: ChordTypeId;
   noteNaming: NoteNaming;
   leftHanded: boolean;
+  /** POLISH.md R4-1: horizontal swipe switches to the previous/next voicing. */
+  onSwipeVoicing?: (direction: 'prev' | 'next') => void;
 }
 
 /** Renders text un-mirrored even inside a horizontally-flipped left-handed group (SPEC §4.1). */
@@ -64,15 +67,35 @@ function MirroredText({
  * Fretboard.tsx). String numbers 1-6 sit outside the o/x marks on the nut
  * side so the mute/open state and the physical string are easy to match up.
  */
-export function ChordDiagram({ voicing, root, typeId, noteNaming, leftHanded }: ChordDiagramProps) {
+export function ChordDiagram({ voicing, root, typeId, noteNaming, leftHanded, onSwipeVoicing }: ChordDiagramProps) {
   void typeId; // reserved for future use (e.g. distinguishing enharmonic degree spellings by chord type)
   const width = diagramWidth();
   const height = diagramHeight();
   const isOpenPosition = voicing.baseFret === 1;
   const groupTransform = leftHanded ? `translate(${width},0) scale(-1,1)` : undefined;
 
+  const pointerStart = useRef<{ x: number; y: number } | null>(null);
+
+  const handlePointerDown = (e: PointerEvent<SVGSVGElement>) => {
+    if (!onSwipeVoicing) return;
+    pointerStart.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handlePointerUp = (e: PointerEvent<SVGSVGElement>) => {
+    const start = pointerStart.current;
+    pointerStart.current = null;
+    if (!start || !onSwipeVoicing) return;
+    const direction = interpretSwipe(e.clientX - start.x, e.clientY - start.y);
+    if (direction) onSwipeVoicing(direction);
+  };
+
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      style={{ width: '100%', height: 'auto', display: 'block', touchAction: onSwipeVoicing ? 'pan-y' : undefined }}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+    >
       <g transform={groupTransform}>
         {/* nut or baseFret number */}
         {isOpenPosition ? (

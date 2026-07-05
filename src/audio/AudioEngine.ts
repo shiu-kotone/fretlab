@@ -140,3 +140,18 @@ export async function unlockAudio(opts: { audioSessionType?: AudioSessionType } 
 export function isAudioUnlocked(): boolean {
   return unlocked;
 }
+
+/**
+ * POLISH.md R4-2 / SPEC §7: iOS suspends the AudioContext on screen lock /
+ * backgrounding and does not auto-resume it. Without this, returning to the
+ * app leaves a scheduler's setInterval loop running (SPEC §4.4's polling
+ * lookahead) against a *frozen* AudioContext.currentTime, so it silently
+ * schedules nothing — the UI shows "playing" while nothing sounds. Call this
+ * from a visibilitychange listener so resume happens as soon as the app is
+ * foregrounded again.
+ */
+export async function resumeAudioContextIfNeeded(): Promise<void> {
+  if (audioContext && audioContext.state === 'suspended') {
+    await audioContext.resume();
+  }
+}

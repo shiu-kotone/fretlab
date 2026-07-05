@@ -11,8 +11,9 @@ import { useCustomTuningsStore } from './stores/customTuningsStore';
 import { useNavigationStore } from './stores/navigationStore';
 import { usePlaybackCoordinatorStore } from './stores/playbackCoordinatorStore';
 import { resolveTuningName } from './theory/tuningResolver';
-import { unlockAudio, setGuitarVolume, setClickVolume } from './audio/AudioEngine';
+import { unlockAudio, setGuitarVolume, setClickVolume, resumeAudioContextIfNeeded } from './audio/AudioEngine';
 import { OnboardingBanner } from './features/settings/OnboardingBanner';
+import { UpdateToast } from './components/UpdateToast';
 import { useLabTabStore } from './features/settings/LabView';
 
 export default function App() {
@@ -61,6 +62,19 @@ export default function App() {
     };
     window.addEventListener('pointerdown', handler, { once: false });
     return () => window.removeEventListener('pointerdown', handler);
+  }, []);
+
+  // SPEC §7 / POLISH.md R4-2: iOS suspends the AudioContext on screen lock /
+  // backgrounding and never auto-resumes it; without this, a still-playing
+  // scheduler comes back from the background silently stuck.
+  useEffect(() => {
+    const handler = () => {
+      if (document.visibilityState === 'visible') {
+        void resumeAudioContextIfNeeded();
+      }
+    };
+    document.addEventListener('visibilitychange', handler);
+    return () => document.removeEventListener('visibilitychange', handler);
   }, []);
 
   const tuningName = resolveTuningName(currentTuningId, customTunings);
@@ -130,6 +144,7 @@ export default function App() {
         {tab === 'lab' && <LabView />}
       </main>
       <TabBar active={tab} onChange={setTab} badges={{ metronome: isPlaying, chords: progressionPlaying }} />
+      <UpdateToast />
     </div>
   );
 }
