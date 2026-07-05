@@ -37,9 +37,6 @@ export function MetronomeView() {
 
       <AccentEditor flash={flash} />
       <BpmControl />
-      <TimeSignatureControl />
-      <SubdivisionControl />
-      <ToneSelector />
 
       <div style={{ padding: '16px', display: 'flex', justifyContent: 'center' }}>
         <button
@@ -58,6 +55,10 @@ export function MetronomeView() {
           {isPlaying ? '停止' : '再生'}
         </button>
       </div>
+
+      <TimeSignatureControl />
+      <SubdivisionControl />
+      <ToneSelector />
 
       <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
         <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minHeight: 44 }}>
