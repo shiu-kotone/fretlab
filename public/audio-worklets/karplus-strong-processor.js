@@ -75,6 +75,7 @@ class Voice {
     this.lpCoeff = 1 - Math.exp((-2 * Math.PI * cutoff) / sampleRateHz);
     this.lpState = 0;
 
+    this.sampleRateHz = sampleRateHz;
     this.age = 0;
     this.maxAge = Math.round(sampleRateHz * (sustainSeconds + TAIL_SECONDS));
     this.releasing = false;
@@ -83,8 +84,14 @@ class Voice {
     this.finished = false;
   }
 
-  release() {
+  // `releaseSeconds` lets a chord-switch damp-all (POLISH.md R3-2) use a
+  // different release window than a normal note-off; omitted, it keeps the
+  // constructor's default RELEASE_SECONDS.
+  release(releaseSeconds) {
     this.releasing = true;
+    if (releaseSeconds !== undefined) {
+      this.releaseStep = 1 / (this.sampleRateHz * releaseSeconds);
+    }
   }
 
   nextSample() {
@@ -142,6 +149,10 @@ class KarplusStrongProcessor extends AudioWorkletProcessor {
     } else if (msg.type === 'stop') {
       const voice = this.voices.find((v) => v.voiceId === msg.voiceId);
       if (voice) voice.release();
+    } else if (msg.type === 'dampAll') {
+      for (const voice of this.voices) {
+        if (!voice.releasing) voice.release(msg.releaseSeconds);
+      }
     }
   }
 

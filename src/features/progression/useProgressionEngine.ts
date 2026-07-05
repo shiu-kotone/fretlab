@@ -7,6 +7,7 @@ import type { Voicing } from '../../data/voicingTypes';
 import { getAudioContext, getClickGain, getGuitarSynth, unlockAudio } from '../../audio/AudioEngine';
 import { LookaheadScheduler } from '../../audio/LookaheadScheduler';
 import { synthesizeClick } from '../../audio/click';
+import { jitteredVelocity, jitteredTimingSeconds, stringDirectionTilt, brightnessForString } from '../../audio/strumHumanize';
 import { secondsPerBeatFromBpm, tickTimings, type TempoParams, type TickEvent } from '../../audio/beatPlan';
 import { REGULAR_TUNING, fretToMidi } from '../../theory/pitch';
 import { useSettingsStore } from '../../stores/settingsStore';
@@ -147,26 +148,32 @@ export function useProgressionEngine(progression: Progression | null) {
     (ctx: AudioContext, voicing: Voicing, action: { kind: 'strum'; direction: 'D' | 'U' } | { kind: 'pluck'; stringIndex: number }, time: number, accent: boolean) => {
       const synth = getGuitarSynth();
       const a4 = useSettingsStore.getState().a4;
-      const velocity = accent ? 0.9 : 0.7;
+      const baseVelocity = accent ? 0.9 : 0.7;
 
-      const triggerAt = (stringIndex: number, delaySeconds: number) => {
+      // POLISH.md R3-1: per-string velocity/timing jitter plus a bass/treble
+      // tilt keyed to strum direction, so a strum doesn't sound like every
+      // string was struck with identical force at a perfectly quantized instant.
+      const triggerAt = (stringIndex: number, delaySeconds: number, direction: 'D' | 'U' | null) => {
         const fret = voicing.frets[stringIndex];
         if (fret === 'x' || fret === undefined) return;
         const midi = fretToMidi(stringIndex, fret, REGULAR_TUNING);
-        const targetTime = time + delaySeconds;
+        const tilt = direction ? stringDirectionTilt(stringIndex, direction) : 0;
+        const velocity = jitteredVelocity(baseVelocity + tilt);
+        const brightness = brightnessForString(stringIndex);
+        const targetTime = time + delaySeconds + jitteredTimingSeconds();
         const delayMs = Math.max(0, (targetTime - ctx.currentTime) * 1000);
         window.setTimeout(() => {
-          synth.pluck(midi, { a4, velocity, brightness: 0.5, sustainSeconds: 2 });
+          synth.pluck(midi, { a4, velocity, brightness, sustainSeconds: 2 });
         }, delayMs);
       };
 
       if (action.kind === 'pluck') {
-        triggerAt(action.stringIndex, 0);
+        triggerAt(action.stringIndex, 0, null);
         return;
       }
 
       const order = action.direction === 'D' ? [0, 1, 2, 3, 4, 5] : [5, 4, 3, 2, 1, 0];
-      order.forEach((stringIndex, i) => triggerAt(stringIndex, i * STRUM_STAGGER_SECONDS));
+      order.forEach((stringIndex, i) => triggerAt(stringIndex, i * STRUM_STAGGER_SECONDS, action.direction));
     },
     [],
   );
@@ -240,10 +247,21 @@ export function useProgressionEngine(progression: Progression | null) {
         const segment = findActiveSegment(segments, beatPosition);
         if (!segment) return;
 
+        // POLISH.md R3-2: detect the transition to a new chord segment (same
+        // key the display tracker uses) *before* updateDisplay overwrites the
+        // ref, so we can damp the previous chord's ringing strings right
+        // before this segment's first strum. Arpeggio patterns are excluded
+        // since their note overlap is intentional.
+        const segmentChanged = lastSegmentKeyRef.current !== `${effectiveBarIndex}:${segment.startBeat}`;
+
         updateDisplay(p, effectiveBarIndex, segments, segment);
 
         const chordInfo = resolveChord(segment.chordId, segment.voicingIndex);
         if (!chordInfo) return;
+
+        if (segmentChanged && !pattern.id.startsWith('arpeggio')) {
+          getGuitarSynth().dampAll(0.05);
+        }
 
         const segmentRelativeBeat = beatPosition - segment.startBeat;
 

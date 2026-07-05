@@ -97,4 +97,16 @@ export class KarplusStrongSynth {
       },
     };
   }
+
+  /**
+   * SPEC-adjacent POLISH.md R3-2: releases every currently-ringing voice over
+   * a short window instead of their normal multi-second sustain, so a chord
+   * change doesn't leave the previous chord's strings ringing into the new
+   * one. Call this right before the first strum of a new chord segment (not
+   * on repeated strums within the same chord, and never during arpeggio
+   * patterns, where the overlap is intentional).
+   */
+  dampAll(releaseSeconds = 0.05): void {
+    this.node.port.postMessage({ type: 'dampAll', releaseSeconds });
+  }
 }

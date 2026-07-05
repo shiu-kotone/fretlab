@@ -3,6 +3,7 @@ import type { Voicing } from '../../data/voicingTypes';
 import { REGULAR_TUNING, fretToMidi } from '../../theory/pitch';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { getGuitarSynth, unlockAudio } from '../../audio/AudioEngine';
+import { jitteredVelocity, jitteredTimingSeconds, stringDirectionTilt, brightnessForString } from '../../audio/strumHumanize';
 
 const STRUM_STAGGER_MS = 30;
 const ARPEGGIO_STAGGER_MS = 120;
@@ -24,24 +25,30 @@ export function useChordPlayback() {
   }, []);
 
   const playVoicing = useCallback(
-    async (voicing: Voicing, staggerMs: number) => {
+    // POLISH.md R3-1: strum() sweeps low->high like a downstrum, so it gets
+    // the same bass-heavy directional tilt; arpeggio() has no strum direction.
+    async (voicing: Voicing, staggerMs: number, direction: 'D' | null) => {
       await unlockAudio();
       clearTimers();
       const synth = getGuitarSynth();
       voicing.frets.forEach((fret, stringIndex) => {
         if (fret === 'x') return;
         const midi = fretToMidi(stringIndex, fret, REGULAR_TUNING);
+        const tilt = direction ? stringDirectionTilt(stringIndex, direction) : 0;
+        const velocity = jitteredVelocity(0.8 + tilt);
+        const brightness = brightnessForString(stringIndex);
+        const delayMs = stringIndex * staggerMs + jitteredTimingSeconds() * 1000;
         const timer = window.setTimeout(() => {
-          synth.pluck(midi, { a4, velocity: 0.8, brightness: 0.5, sustainSeconds: 2 });
-        }, stringIndex * staggerMs);
+          synth.pluck(midi, { a4, velocity, brightness, sustainSeconds: 2 });
+        }, delayMs);
         timersRef.current.push(timer);
       });
     },
     [a4, clearTimers],
   );
 
-  const strum = useCallback((voicing: Voicing) => void playVoicing(voicing, STRUM_STAGGER_MS), [playVoicing]);
-  const arpeggio = useCallback((voicing: Voicing) => void playVoicing(voicing, ARPEGGIO_STAGGER_MS), [playVoicing]);
+  const strum = useCallback((voicing: Voicing) => void playVoicing(voicing, STRUM_STAGGER_MS, 'D'), [playVoicing]);
+  const arpeggio = useCallback((voicing: Voicing) => void playVoicing(voicing, ARPEGGIO_STAGGER_MS, null), [playVoicing]);
 
   useEffect(() => clearTimers, [clearTimers]);
 

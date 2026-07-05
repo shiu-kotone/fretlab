@@ -34,8 +34,24 @@ function createContext(): AudioContext {
 export function getAudioContext(): AudioContext {
   if (!audioContext) {
     audioContext = createContext();
+
+    // POLISH.md R3-3: click and guitar buses used to reach destination via
+    // separate paths (guitar through its own compressor, click direct), so
+    // playing both at once could sum past 0dBFS and clip. A single master
+    // limiter downstream of both buses catches that regardless of which
+    // combination of sounds is playing.
+    const masterCompressor = audioContext.createDynamicsCompressor();
+    masterCompressor.threshold.value = -3;
+    masterCompressor.knee.value = 0;
+    masterCompressor.ratio.value = 20;
+    masterCompressor.attack.value = 0.003;
+    masterCompressor.release.value = 0.1;
+    const masterGain = audioContext.createGain();
+    masterGain.connect(masterCompressor);
+    masterCompressor.connect(audioContext.destination);
+
     clickGain = audioContext.createGain();
-    clickGain.connect(audioContext.destination);
+    clickGain.connect(masterGain);
 
     // The guitar synth is legitimately polyphonic (chords, rapid restrikes,
     // an overlapping repeat/tap) — several Karplus-Strong voices summing on
@@ -50,7 +66,7 @@ export function getAudioContext(): AudioContext {
     guitarCompressor.attack.value = 0.003;
     guitarCompressor.release.value = 0.25;
     guitarGain.connect(guitarCompressor);
-    guitarCompressor.connect(audioContext.destination);
+    guitarCompressor.connect(masterGain);
   }
   return audioContext;
 }
